@@ -60,8 +60,9 @@ ci_gotchas: |
 
 O Profile é **autoritativo** — resolve stack por `path → stack`. Para um path **ausente** no
 Profile, `workflow-dev` **infere pelo manifesto** do sub-projeto (ex.: presença de um
-manifesto de módulo Go implica `expert-backend-go`; um manifesto de pacote JS com dependência
-de React implica `expert-frontend-react`) e **avisa explicitamente** que a stack foi
+manifesto de módulo Go implica `expert-backend-go`; um `pyproject.toml`/`requirements.txt`
+implica `expert-backend-python`; um manifesto de pacote JS com dependência de React implica
+`expert-frontend-react`) e **avisa explicitamente** que a stack foi
 inferida, não declarada. Isso entrega detecção automática sem abrir mão do determinismo —
 a inferência é sempre visível, nunca silenciosa.
 

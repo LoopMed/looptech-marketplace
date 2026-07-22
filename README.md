@@ -13,7 +13,7 @@ conexão — isso garante que o mesmo plugin sirva qualquer repositório.
 
 ## O que é o plugin `looptech`
 
-Um único plugin, publicado neste marketplace, com **6 skills**:
+Um único plugin, publicado neste marketplace, com **7 skills**:
 
 1. `looptech:workflow-dev` — o **orquestrador**. Lê o Project Profile do `CLAUDE.md`
    do projeto, classifica o tamanho da tarefa (lane S/M/L), resolve qual(is) skill(s)
@@ -27,17 +27,24 @@ Um único plugin, publicado neste marketplace, com **6 skills**:
    parametrização), pirâmide de testes (unit + integração + injection), lint
    `only-new-issues`, segurança em princípio (ownership, locks financeiros, gating por
    ambiente).
-3. `looptech:expert-frontend-react` — engenharia React + TypeScript: arquitetura de
+3. `looptech:expert-backend-python` — engenharia Python (FastAPI + SQLAlchemy 2.0 async +
+   Pydantic v2): arquitetura Clean + Hexagonal (Ports & Adapters via `ABC`), domínio puro
+   sem ORM/Pydantic, disciplina SQLAlchemy async (`select()` tipado, zero `SELECT *`, valores
+   só como parâmetro ligado, `text()` só com `:param`, `flush` no repo — `commit` na borda),
+   pirâmide de testes (unit com ports mockados + integração com testcontainers + injection),
+   gate `ruff` + `mypy` strict, segurança em princípio (ownership, locks transacionais,
+   gating por ambiente).
+4. `looptech:expert-frontend-react` — engenharia React + TypeScript: arquitetura de
    componentes, hooks testáveis, TypeScript estrito (sem `any`/`@ts-ignore` sem
    justificativa), testes com vitest + RTL focados em comportamento visível, E2E no
    golden path, CSP e segurança de cliente.
-4. `looptech:expert-frontend-pwa` — eixo de **UX** orientado a mobile-first: layout
+5. `looptech:expert-frontend-pwa` — eixo de **UX** orientado a mobile-first: layout
    mobile-first, alvos de toque ≥ 44px, densidade e ergonomia de polegar, performance
    percebida, comportamento offline-tolerante.
-5. `looptech:expert-frontend-web` — eixo de **UX** orientado a web-first/desktop:
+6. `looptech:expert-frontend-web` — eixo de **UX** orientado a web-first/desktop:
    layouts densos, hover e atalhos de teclado, tabelas/grades para telas grandes,
    fluxos de operador/admin.
-6. `looptech:expert-database` — disciplina de query (query consts, zero `SELECT *`,
+7. `looptech:expert-database` — disciplina de query (query consts, zero `SELECT *`,
    parametrização, `null.T`, injection tests) **+** fluxo de execução operacional
    (preflight de conexão → discovery live de tabelas/schemas/indexes → query sargável
    → execução), gate de produção e migrations por existência (não por version).
@@ -61,6 +68,7 @@ futuras combinações (ex.: "Vue mobile-first") sem reescrever nada.
 |---|---|
 | `looptech:workflow-dev` | Início de qualquer tarefa de desenvolvimento (feature, fix, hotfix, refactor) num projeto com Project Profile |
 | `looptech:expert-backend-go` | A tarefa toca um sub-projeto mapeado como stack Go no Project Profile |
+| `looptech:expert-backend-python` | A tarefa toca um sub-projeto mapeado como stack Python no Project Profile (ou inferido por `pyproject.toml`/`requirements.txt`) |
 | `looptech:expert-frontend-react` | A tarefa toca um sub-projeto mapeado como stack React+TS no Project Profile |
 | `looptech:expert-frontend-pwa` | A área tocada resolve para UX mobile-first (`ux_default`/`ux_overrides` apontando `expert-frontend-pwa`) |
 | `looptech:expert-frontend-web` | A área tocada resolve para UX web-first (`ux_default`/`ux_overrides` apontando `expert-frontend-web`) |
@@ -76,7 +84,7 @@ No Claude Code:
 ```
 
 Isso registra o marketplace `looptech` e instala o plugin `looptech`, disponibilizando
-as 6 skills acima via `looptech:<skill>`.
+as 7 skills acima via `looptech:<skill>`.
 
 ## Como um projeto adota o plugin
 
@@ -133,8 +141,9 @@ Notas sobre o Profile:
   por path, eixo de UX por área, comandos por stack, convenção de branch/PR,
   `specs_dir` e (se houver DB) o bloco `database`.
 - Para um path ausente no Profile, `workflow-dev` infere a stack pelo manifesto
-  (`go.mod` → `expert-backend-go`; `package.json` com `react` → `expert-frontend-react`)
-  e avisa que inferiu — o Profile é sempre a fonte autoritativa quando presente.
+  (`go.mod` → `expert-backend-go`; `pyproject.toml`/`requirements.txt` → `expert-backend-python`;
+  `package.json` com `react` → `expert-frontend-react`) e avisa que inferiu — o Profile é sempre
+  a fonte autoritativa quando presente.
 - Regras de **segurança do produto** (locks nomeados, gating de endpoints sensíveis,
   CORS/gateway, rate-limit, auth de storage) continuam no `CLAUDE.md` do projeto —
   o plugin carrega apenas os princípios agnósticos correspondentes.
@@ -144,8 +153,8 @@ Notas sobre o Profile:
 
 ## Extensibilidade
 
-O naming por stack (`expert-backend-go`, `expert-frontend-react`, ...) já deixa o
-caminho aberto para novas skills expert conforme surgir necessidade real em algum
+O naming por stack (`expert-backend-go`, `expert-backend-python`, `expert-frontend-react`, ...)
+já deixa o caminho aberto para novas skills expert conforme surgir necessidade real em algum
 projeto consumidor — por exemplo `expert-backend-node`, `expert-frontend-vue`, ou
 `expert-database-<outro dialeto>`. Essas skills não existem hoje (YAGNI); são criadas
 quando um projeto real exigir, seguindo o mesmo padrão: processo e disciplina
