@@ -84,7 +84,26 @@ No Claude Code:
 ```
 
 Isso registra o marketplace `looptech` e instala o plugin `looptech`, disponibilizando
-as 7 skills acima via `looptech:<skill>`.
+as skills acima via `looptech:<skill>`.
+
+### Depois de instalar — rode o `init`
+
+**Você não precisa decorar o que configurar.** Assim que instalar, rode:
+
+```
+/looptech:init
+```
+
+A skill `looptech:init` faz o setup guiado do zero ao pronto — detecta os sub-projetos e
+gera o **Project Profile** no `CLAUDE.md`, configura a conexão de **banco** (via
+`looptech:expert-database`, sem gravar credencial silenciosamente e com PROD sempre gated),
+oferece o **Serena** (navegação de código, opcional) e o **memory-graph** (memória semântica
+local, opcional), e valida os **runtimes** de cada stack. Cada passo é DETECTA → REPORTA →
+OFERECE (com sua confirmação). Reinicie a sessão ao final para os MCP servers novos aparecerem.
+
+> Instalação opcional do `memory-graph` (plugin irmão neste marketplace):
+> `/plugin install memory-graph@looptech` — memória com recall vetorial + travessia de
+> `[[links]]`, 100% local (nada sai da máquina). O `init` te guia por ele também.
 
 ## Como um projeto adota o plugin
 
