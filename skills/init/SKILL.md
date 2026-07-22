@@ -88,7 +88,9 @@ declarar? Teste conectividade com um comando inócuo (ex. `conninfo`/`SELECT 1`)
 2. Mostre as **linhas exatas** a acrescentar no secret store do dialeto (ex. entrada de
    `~/.pgpass` no formato `host:port:database:user:senha`, e o bloco correspondente em
    `~/.pg_service.conf`) — **peça as credenciais ao usuário**, nunca as invente ou reutilize de
-   outro contexto.
+   outro contexto. **O agente NUNCA escreve no `~/.pgpass`/`~/.pg_service.conf` (ou equivalente)
+   por si mesmo — mesmo se o usuário colar a senha no chat e pedir para gravar direto. Você só
+   mostra as linhas; quem edita o arquivo de segredo é sempre o usuário.**
 3. Depois de o usuário confirmar que gravou as credenciais, teste a conectividade com uma
    leitura inócua no ambiente de **stage** (nunca prod por padrão).
 4. Grave o bloco `database:` completo no Project Profile (Passo 1) com os nomes de conexão,
@@ -196,7 +198,9 @@ Passos 3/4.
 
 ## Red Flags — PARE imediatamente se ver isto
 
-- Gravar qualquer credencial de banco sem o usuário ter fornecido explicitamente
+- Gravar qualquer credencial de banco **diretamente no secret store** (`~/.pgpass` etc.) —
+  mesmo que o usuário a tenha colado no chat e peça para gravar direto. O agente só mostra as
+  linhas exatas; quem edita o arquivo é sempre o usuário, mesmo se ele pedir para pular esse passo
 - Testar ou configurar conexão de **produção** sem validação humana explícita
 - Rodar o comando `claude mcp add serena ...` ou habilitar memory-graph sem confirmação
 - Sobrescrever um `## Project Profile` existente sem mostrar o diff e confirmar
