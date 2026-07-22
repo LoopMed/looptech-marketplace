@@ -1,7 +1,7 @@
 {
   "name": "looptech",
   "description": "Agnostic dev workflow orchestrator + guided init + stack-expert skills (backend-go, backend-python, frontend-react engineering, frontend-pwa/web UX, database).",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "author": { "name": "LoopTech" },
   "repository": "https://github.com/LoopMed/looptech-marketplace",
   "license": "MIT",

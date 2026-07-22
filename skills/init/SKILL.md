@@ -106,24 +106,42 @@ pergunte antes de tocar nela, mesmo para um teste de conectividade.
 Serena expõe tools de navegação semântica de código (símbolos, referências, LSP da stack) via
 MCP. Opcional: ofereça, mas siga sem ele se recusado ou sem pré-requisito.
 
-**DETECTA:** rode `uv --version` (ou equivalente) para checar se `uv` está disponível — é
-pré-requisito do comando de instalação.
+**DETECTA:**
+- Rode `uv --version` (ou equivalente) para checar se `uv` está disponível — é pré-requisito.
+- Monte a lista de **sub-projetos candidatos** a partir do Project Profile (Passo 1): cada
+  sub-projeto cuja stack tem um LSP suportado (ex. Go→`gopls`, React/TS→`typescript-language-server`,
+  Python→`pyright`/`basedpyright`).
 
-**REPORTA:** se `uv` não estiver instalado, informe que Serena depende dele e ofereça o link/
-comando de instalação do `uv` primeiro; se já estiver instalado, confirme que Serena pode ser
-adicionado.
+**VALIDA:** para cada candidato, confirme que o diretório existe e tem o manifesto da stack
+(`go.mod`, `package.json`, `pyproject.toml`, …) e que o LSP correspondente está disponível ou
+pode ser baixado sob demanda. Descarte da lista o que não validar (e diga por quê).
 
-**OFERECE:** com confirmação explícita, rode:
+**REPORTA:** se `uv` faltar, informe que Serena depende dele e ofereça o link de instalação
+primeiro. Senão, mostre a lista **validada** de sub-projetos candidatos com a stack/LSP de cada.
+
+**PERGUNTA (obrigatório):** **pergunte ao usuário QUAIS sub-projetos validados ele quer
+registrar/indexar no Serena** — nunca registre todos por conta própria. Ofereça seleção
+múltipla (ex.: "todos", "só backend", "backend + frontend", …).
+
+**OFERECE (com confirmação):** registre **um único** MCP server em modo **multi-projeto** (sem
+`--project`, para expor o `activate_project` e permitir navegar todos os escolhidos), **fixado
+numa release estável** e com o **dashboard web desligado**:
 
 ```
-claude mcp add serena -- uvx --from git+https://github.com/oraios/serena serena start-mcp-server --context ide-assistant --project "<dir detectado>"
+claude mcp add serena -- uvx --from git+https://github.com/oraios/serena@<tag-estável> serena start-mcp-server --context ide-assistant --enable-web-dashboard false
 ```
 
-onde `<dir detectado>` é o diretório raiz do projeto (ou do sub-projeto, se o usuário preferir
-escopo mais restrito). Avise que:
-- O **LSP da stack** (ex. `gopls`, `typescript-language-server`) é baixado sob demanda na
-  primeira navegação — pode levar um tempo na primeira vez.
-- Os tools novos só aparecem **depois de reiniciar a sessão** do Claude Code.
+- **`@<tag-estável>`**: use a **release mais recente** (veja `github.com/oraios/serena/releases`),
+  **nunca o git HEAD** — o HEAD pode vir com bugs de CLI/schema.
+- **`--enable-web-dashboard false`**: sem isso o Serena **abre uma aba do navegador a cada
+  start** do server (que reinicia a cada conexão) — é chato; desligue.
+- Se o usuário escolher **um só** sub-projeto, pode simplificar com `--project "<dir>"`.
+- Os sub-projetos escolhidos são **registrados sob demanda** no primeiro `activate_project`
+  (não dependa da CLI `serena project index/create`, que é instável).
+
+Avise que:
+- O **LSP da stack** é baixado sob demanda na primeira navegação — pode demorar na 1ª vez.
+- Os tools novos (e o dashboard desligado) só valem **depois de reiniciar a sessão** do Claude Code.
 
 ---
 
