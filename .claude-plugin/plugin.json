@@ -1,10 +1,10 @@
 {
   "name": "looptech",
-  "description": "Agnostic dev workflow orchestrator + stack-expert skills (backend-go, frontend-react engineering, frontend-pwa/web UX, database).",
-  "version": "0.1.0",
+  "description": "Agnostic dev workflow orchestrator + stack-expert skills (backend-go, backend-python, frontend-react engineering, frontend-pwa/web UX, database).",
+  "version": "0.2.0",
   "author": { "name": "LoopTech" },
   "repository": "https://github.com/LoopMed/looptech-marketplace",
   "license": "MIT",
-  "keywords": ["workflow", "orchestration", "subagents", "backend", "frontend", "database", "react", "go", "pwa", "ux"],
+  "keywords": ["workflow", "orchestration", "subagents", "backend", "frontend", "database", "react", "go", "python", "fastapi", "pwa", "ux"],
   "skills": "./skills/"
 }
