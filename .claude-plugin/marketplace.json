@@ -3,6 +3,7 @@
   "owner": { "name": "LoopTech", "email": "contato@loopmed.com.br" },
   "metadata": { "description": "LoopTech engineering workflow & stack-expert skills — agnostic dev pipeline." },
   "plugins": [
-    { "name": "looptech", "source": "./", "description": "Agnostic dev workflow + backend-go / frontend-react / frontend-pwa / frontend-web / database expert skills, driven by each project's CLAUDE.md Project Profile." }
+    { "name": "looptech", "source": "./", "description": "Agnostic dev workflow + backend-go / frontend-react / frontend-pwa / frontend-web / database expert skills, driven by each project's CLAUDE.md Project Profile." },
+    { "name": "memory-graph", "source": "./plugins/memory-graph", "description": "Local semantic recall + [[link]] graph traversal over markdown memory files. 100% on-device (fastembed + sqlite-vec), zero cloud." }
   ]
 }

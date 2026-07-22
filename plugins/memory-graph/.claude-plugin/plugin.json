@@ -1,0 +1,15 @@
+{
+  "name": "memory-graph",
+  "version": "0.1.0",
+  "description": "Local semantic recall + [[link]] graph traversal over markdown memory files. 100% local, zero cloud — embeddings run on-device via fastembed.",
+  "mcpServers": {
+    "memory-graph": {
+      "command": "uv",
+      "args": ["run", "--directory", "${CLAUDE_PLUGIN_ROOT}", "python", "-m", "memory_graph", "serve"],
+      "env": {
+        "MEMORY_GRAPH_DIR": "${MEMORY_GRAPH_DIR}",
+        "MEMORY_GRAPH_DB": "${MEMORY_GRAPH_DB}"
+      }
+    }
+  }
+}

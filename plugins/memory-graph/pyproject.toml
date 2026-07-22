@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memory-graph"
+version = "0.1.0"
+description = "Local semantic recall + [[link]] graph traversal over markdown memory files. 100% local, zero cloud."
+requires-python = ">=3.10"
+dependencies = [
+    "sqlite-vec==0.1.9",
+    "fastembed",
+    "mcp[cli]",
+    "pyyaml",
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+memory-graph = "memory_graph.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["memory_graph*"]
