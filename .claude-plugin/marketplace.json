@@ -1,0 +1,8 @@
+{
+  "name": "looptech",
+  "owner": { "name": "LoopTech", "email": "contato@loopmed.com.br" },
+  "metadata": { "description": "LoopTech engineering workflow & stack-expert skills — agnostic dev pipeline." },
+  "plugins": [
+    { "name": "looptech", "source": "./", "description": "Agnostic dev workflow + backend-go / frontend-react / frontend-pwa / frontend-web / database expert skills, driven by each project's CLAUDE.md Project Profile." }
+  ]
+}
