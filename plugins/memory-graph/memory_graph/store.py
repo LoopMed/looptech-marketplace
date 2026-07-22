@@ -50,15 +50,14 @@ def _normalize(text: str) -> str:
 def default_db_path() -> str:
     """Where the index lives when --db isn't passed explicitly.
 
-    Overridable via the MEMORY_GRAPH_DB env var. This is a derived artifact
-    (safe to delete/rebuild) — never the markdown source of truth.
+    Thin wrapper around `config.resolve_db_path()` — kept here for backward
+    compatibility since callers historically imported it from `store`. This
+    is a derived artifact (safe to delete/rebuild) — never the markdown
+    source of truth.
     """
-    import os
+    from .config import resolve_db_path
 
-    env = os.environ.get("MEMORY_GRAPH_DB")
-    if env:
-        return env
-    return str(Path.home() / ".cache" / "memory-graph" / "index.db")
+    return resolve_db_path()
 
 
 class Store:

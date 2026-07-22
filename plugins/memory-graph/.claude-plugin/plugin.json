@@ -1,6 +1,6 @@
 {
   "name": "memory-graph",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local semantic recall + [[link]] graph traversal over markdown memory files. 100% local, zero cloud — embeddings run on-device via fastembed.",
   "mcpServers": {
     "memory-graph": {

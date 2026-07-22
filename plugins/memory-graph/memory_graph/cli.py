@@ -7,34 +7,38 @@ import json
 import os
 import sys
 
+from .config import resolve_db_path, resolve_memory_dir
 from .embed import Embedder
+from .index import ensure_fresh
 from .index import reindex as run_reindex
 from .search import get as run_get
 from .search import neighbors as run_neighbors
 from .search import search as run_search
-from .store import Store, default_db_path
+from .store import Store
 
 
 def _add_db_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--db",
         default=None,
-        help="Path to the SQLite index (default: $MEMORY_GRAPH_DB or "
-        "~/.cache/memory-graph/index.db)",
+        help="Path to the SQLite index (default: $MEMORY_GRAPH_DB, else a "
+        "path auto-derived from the current Claude Code project)",
     )
 
 
 def _resolve_db(args: argparse.Namespace) -> str:
-    return args.db or default_db_path()
+    return resolve_db_path(args.db)
 
 
 def cmd_reindex(args: argparse.Namespace) -> int:
-    stats = run_reindex(args.dir, _resolve_db(args))
+    directory = resolve_memory_dir(args.dir, required=True)
+    db_path = _resolve_db(args)
+    stats = run_reindex(directory, db_path)
     print(json.dumps(stats, indent=2))
     print(
         f"Indexed {stats['total']} memories "
         f"({stats['embedded']} embedded, {stats['skipped']} unchanged, "
-        f"{stats['removed']} removed) -> {_resolve_db(args)}",
+        f"{stats['removed']} removed) -> {db_path}",
         file=sys.stderr,
     )
     return 0
@@ -43,6 +47,7 @@ def cmd_reindex(args: argparse.Namespace) -> int:
 def cmd_search(args: argparse.Namespace) -> int:
     store = Store(_resolve_db(args))
     try:
+        ensure_fresh(store, resolve_memory_dir(required=False))
         results = run_search(store, Embedder(), args.query, args.k)
     finally:
         store.close()
@@ -53,6 +58,7 @@ def cmd_search(args: argparse.Namespace) -> int:
 def cmd_get(args: argparse.Namespace) -> int:
     store = Store(_resolve_db(args))
     try:
+        ensure_fresh(store, resolve_memory_dir(required=False))
         doc = run_get(store, args.name)
     finally:
         store.close()
@@ -66,6 +72,7 @@ def cmd_get(args: argparse.Namespace) -> int:
 def cmd_neighbors(args: argparse.Namespace) -> int:
     store = Store(_resolve_db(args))
     try:
+        ensure_fresh(store, resolve_memory_dir(required=False))
         result = run_neighbors(store, args.name, args.depth)
     finally:
         store.close()
@@ -92,7 +99,12 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_reindex = sub.add_parser("reindex", help="Scan a directory and (re)build the index")
-    p_reindex.add_argument("--dir", required=True, help="Directory of memory .md files")
+    p_reindex.add_argument(
+        "--dir",
+        default=None,
+        help="Directory of memory .md files (default: $MEMORY_GRAPH_DIR, else "
+        "auto-detected from the current Claude Code project)",
+    )
     _add_db_arg(p_reindex)
     p_reindex.set_defaults(func=cmd_reindex)
 
@@ -124,7 +136,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    except FileNotFoundError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

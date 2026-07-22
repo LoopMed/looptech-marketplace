@@ -11,13 +11,17 @@ from .parse import scan_dir
 from .store import Store
 
 
-def reindex(directory: str, db_path: str) -> dict:
-    """Reindex `directory` into the SQLite store at `db_path`.
+def reindex_store(store: Store, directory: str) -> dict:
+    """Same incremental logic as `reindex()`, but reuses an already-open
+    `Store` instead of opening/closing its own connection.
+
+    This is what both the explicit `reindex` command/tool and the lazy
+    `ensure_fresh()` (called at the top of every query) share — there is
+    only one hash/mtime-based incremental algorithm.
 
     Returns a stats dict: {"total", "embedded", "skipped", "removed"}.
     """
     docs = scan_dir(directory)
-    store = Store(db_path)
 
     embedder: Embedder | None = None
     embedded = 0
@@ -48,7 +52,6 @@ def reindex(directory: str, db_path: str) -> dict:
             store.add_link(doc.name, target_raw, resolved)
 
     store.conn.commit()
-    store.close()
 
     return {
         "total": len(docs),
@@ -56,3 +59,33 @@ def reindex(directory: str, db_path: str) -> dict:
         "skipped": skipped,
         "removed": removed,
     }
+
+
+def reindex(directory: str, db_path: str) -> dict:
+    """Reindex `directory` into the SQLite store at `db_path`.
+
+    Opens and closes its own `Store` connection — the entrypoint used by
+    the explicit `reindex` CLI command / `memory_reindex` MCP tool.
+    """
+    store = Store(db_path)
+    try:
+        return reindex_store(store, directory)
+    finally:
+        store.close()
+
+
+def ensure_fresh(store: Store, memory_dir: str | None) -> dict | None:
+    """Lazily bring `store` up to date with `memory_dir` before a query.
+
+    Called at the start of every `search` / `get` / `neighbors` entrypoint
+    (CLI and MCP alike) so nobody has to run `reindex` by hand. It's the
+    same incremental algorithm as the explicit reindex — only files whose
+    content hash changed get re-embedded — so the cost is ~ms when nothing
+    changed and proportional only to what actually changed otherwise.
+
+    No-ops (returns `None`) when `memory_dir` couldn't be resolved, so a
+    query still runs against whatever is already in the index.
+    """
+    if not memory_dir:
+        return None
+    return reindex_store(store, memory_dir)

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from memory_graph.embed import Embedder
-from memory_graph.index import reindex
+from memory_graph.index import ensure_fresh, reindex
 from memory_graph.search import get, neighbors, search
 from memory_graph.store import Store
 
@@ -129,3 +129,49 @@ def test_neighbors_unresolved_name_returns_empty(tmp_path: Path):
         store.close()
     assert result["resolved"] is None
     assert result["neighbors"] == []
+
+
+def test_ensure_fresh_reflects_file_edits_without_manual_reindex(tmp_path: Path):
+    """The lazy-reindex helper every query entrypoint calls at the top of
+    search/get/neighbors: editing a memory file and calling only
+    `ensure_fresh()` (never the explicit `reindex()`) must be enough for a
+    subsequent query to see the new content.
+    """
+    doc_path = tmp_path / "a.md"
+    doc_path.write_text(DOC_A, encoding="utf-8")
+    db_path = str(tmp_path / "index.db")
+    store = Store(db_path)
+    try:
+        first = ensure_fresh(store, str(tmp_path))
+        assert first["embedded"] == 1
+
+        doc = get(store, "payment-gateway-integration")
+        assert doc is not None
+        assert "3D Secure" not in doc["description"]
+
+        # Edit the source .md directly, as a user would — no explicit
+        # `reindex()` call anywhere in this test.
+        edited = DOC_A.replace(
+            "Integrating a new payment gateway for processing transactions.",
+            "Integrating a new payment gateway for processing transactions, now with 3D Secure.",
+        )
+        doc_path.write_text(edited, encoding="utf-8")
+
+        second = ensure_fresh(store, str(tmp_path))
+        assert second["embedded"] == 1  # only the changed file was re-embedded
+        assert second["skipped"] == 0
+
+        doc_after = get(store, "payment-gateway-integration")
+        assert doc_after is not None
+        assert "3D Secure" in doc_after["description"]
+    finally:
+        store.close()
+
+
+def test_ensure_fresh_is_noop_without_a_memory_dir(tmp_path: Path):
+    db_path, _ = _build_index(tmp_path)
+    store = Store(db_path)
+    try:
+        assert ensure_fresh(store, None) is None
+    finally:
+        store.close()

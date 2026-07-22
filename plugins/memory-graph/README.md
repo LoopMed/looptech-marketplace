@@ -21,6 +21,35 @@ The tool never edits your `.md` files.
 - The vector/graph store is a local SQLite file. No data, query, or memory
   content is ever sent anywhere.
 
+## Auto-reindex + auto-detection — you never reindex by hand
+
+- **Lazy auto-reindex on every query.** `search`, `get` and `neighbors` — CLI
+  and MCP tools alike — call the same incremental reindex used by the
+  explicit `reindex` command before answering. Only `.md` files whose
+  content hash changed since the last run get re-embedded, so the cost is
+  ~ms when nothing changed. Edit a memory file and immediately search
+  again — no `reindex` step in between required. `reindex`/`memory_reindex`
+  still exist for an explicit/manual refresh, but nothing depends on you
+  remembering to run them.
+- **Auto-detected memory directory.** When `MEMORY_GRAPH_DIR` isn't set, the
+  directory is derived from the current Claude Code project:
+  `~/.claude/projects/<slug>/memory`, where `<slug>` is the project's
+  absolute path with every `/` replaced by `-` (e.g.
+  `/Users/you/projects/Foo` -> `-Users-you-projects-Foo`). Resolution order
+  is explicit flag (where one exists) -> `$MEMORY_GRAPH_DIR` ->
+  `$CLAUDE_PROJECT_DIR` (or `cwd`) via that slug rule. If nothing resolves,
+  commands that require a directory (like `reindex`) fail with a message
+  telling you to set `MEMORY_GRAPH_DIR`; query commands degrade gracefully
+  and just search whatever's already indexed.
+- **Auto-detected index location.** Likewise, when `MEMORY_GRAPH_DB` isn't
+  set, the SQLite index lives at a stable, project-scoped path *outside*
+  the memory directory: `~/.claude/projects/<slug>/.memory-graph/index.db`
+  — so it never pollutes the memory folder and each project gets its own
+  index automatically.
+
+All of this lives in one place, `memory_graph/config.py`, used by every
+entrypoint (`cli.py` and `server.py`) — no duplicated resolution logic.
+
 ## Memory file format
 
 ```markdown
@@ -53,17 +82,20 @@ uv venv .venv && uv pip install --python .venv/bin/python -e ".[dev]"
 ## CLI
 
 ```bash
-# (Re)build the index. Incremental: only changed files are re-embedded
-# (tracked by content hash), so repeated runs are fast.
+# (Re)build the index explicitly. Incremental: only changed files are
+# re-embedded (tracked by content hash), so repeated runs are fast. --dir
+# is optional — see auto-detection above.
 python -m memory_graph reindex --dir /path/to/memory
 
 # Semantic search — ranked by embedding similarity, not keyword matching.
+# Lazily reindexes first (see auto-reindex above), no --dir needed.
 python -m memory_graph search "gateway de pagamento" --k 5
 
-# Fetch one memory by name (or filename).
+# Fetch one memory by name (or filename). Also lazily reindexes first.
 python -m memory_graph get project_doctor_payout_model
 
 # Follow the [[link]] graph (undirected: both outgoing and incoming links).
+# Also lazily reindexes first.
 python -m memory_graph neighbors project_doctor_payout_model --depth 1
 
 # Run the MCP server (stdio transport).
@@ -71,8 +103,7 @@ python -m memory_graph serve --dir /path/to/memory
 ```
 
 All commands accept `--db <path>` to point at a specific index file;
-otherwise it defaults to `$MEMORY_GRAPH_DB` or
-`~/.cache/memory-graph/index.db`. `serve` also accepts `--dir` (or
+otherwise it's auto-detected (see above). `serve` also accepts `--dir` (or
 `$MEMORY_GRAPH_DIR`) as the default directory for the `memory_reindex` tool.
 
 ## MCP tools
@@ -121,7 +152,11 @@ memory_graph/
   parse.py    frontmatter + [[link]] extraction (reads .md, never writes)
   embed.py    local fastembed wrapper
   store.py    SQLite: docs, links, vector search, name resolution
-  index.py    reindex(): parse -> (changed only) embed -> store
+  config.py   resolve_memory_dir() / resolve_db_path() — the ONE place
+              auto-detection lives, used by cli.py and server.py
+  index.py    reindex(): parse -> (changed only) embed -> store;
+              ensure_fresh(): lazy incremental reindex called at the top
+              of every search/get/neighbors entrypoint
   search.py   search() / get() / neighbors()
   server.py   FastMCP server (4 tools)
   cli.py      argparse CLI
