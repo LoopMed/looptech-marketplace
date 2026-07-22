@@ -1,6 +1,6 @@
 ---
 name: workflow-dev
-description: Use ao iniciar QUALQUER tarefa de desenvolvimento (feature, bugfix, hotfix, refactor) em um projeto que declara um Project Profile no CLAUDE.md. Orquestra o ciclo completo — discover → spec+plan → env → implementar → review → lint/tests → PR — dimensionado por lane (S/M/L), delegando toda análise/código a subagentes com handoff rico e loop de autonomia. Detecta a stack de cada sub-projeto e despacha as skills expert corretas (expert-backend-go, expert-frontend-react, expert-frontend-pwa, expert-frontend-web, expert-database). NÃO use para projetos sem Project Profile.
+description: Use ao iniciar QUALQUER tarefa de desenvolvimento (feature, bugfix, hotfix, refactor) em um projeto que declara um Project Profile no CLAUDE.md. Orquestra o ciclo completo — discover → spec+plan → env → implementar → review → lint/tests → PR — dimensionado por lane (S/M/L), delegando toda análise/código a subagentes com handoff rico e loop de autonomia. Detecta a stack de cada sub-projeto e despacha as skills expert corretas (expert-backend-go, expert-backend-python, expert-frontend-react, expert-frontend-pwa, expert-frontend-web, expert-database). NÃO use para projetos sem Project Profile.
 ---
 
 # Workflow Dev — Orquestrador Agnóstico de Desenvolvimento
