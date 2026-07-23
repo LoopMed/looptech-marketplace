@@ -48,13 +48,26 @@ Cada subagente recebe **somente o que é da sua responsabilidade**, com escopo d
 etapa de spec/plan. A decomposição correta das tasks é o que torna o handoff enxuto — uma
 task bem-scopada cabe inteira, inline, no prompt.
 
-- **Uma unidade independente = um subagente.** Arquivos/tasks sem dependência direta (não
-  compartilham arquivo nem estado) são despachados **em paralelo**, um subagente por unidade.
+- **Delegar é o padrão.** Sempre prefira despachar um subagente a executar você mesmo. O
+  orquestrador só age direto na exceção trivial definida no Delegation Mandate — na dúvida,
+  delegue.
+- **Uma unidade independente = um subagente, em paralelo por padrão.** Arquivos/tasks sem
+  dependência direta (não compartilham arquivo nem estado) são despachados **ao mesmo tempo**,
+  um subagente por unidade — não serialize por hábito.
+- **Colisão ⇒ serialize.** Quando duas subtasks colidem (mesmo arquivo, mesmo recurso, ou uma
+  depende do resultado da outra), **nunca** rode as duas em paralelo: despache a primeira,
+  **espere concluir**, e só então um novo subagente ataca a próxima. Duas escritas concorrentes
+  no mesmo arquivo corrompem o resultado.
 - **Nunca empacote N arquivos independentes num único subagente** — isso serializa dentro
   dele o que deveria correr em paralelo (ex.: 5 arquivos editados em sequência por 1 agente,
   quando 5 agentes fariam em paralelo no tempo de 1).
 - **Só agrupe no mesmo subagente** tasks genuinamente acopladas (mesmo arquivo, ou uma
   depende do resultado da outra).
+- **Tarefas pequenas — respeite a janela do subagente.** Cada subagente tem janela finita (na
+  ordem de ~350k tokens). Dimensione cada subtask para caber com folga; se exigir ler/escrever
+  muito, **quebre em unidades menores antes de despachar**. Task grande demais estoura o
+  contexto no meio, gera retrabalho e entrega pela metade. O checkpoint de progresso é rede de
+  segurança, não desculpa para task gigante.
 - **Primeiro prompt completo.** Faça o recon (grep de paths, edge cases, estrutura) **antes**
   de despachar, e coloque tudo no primeiro prompt — evita rodadas de follow-up, cada uma
   pagando cold-start de novo.
