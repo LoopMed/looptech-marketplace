@@ -23,8 +23,8 @@ ad hoc (documentação local, se houver).
 **Princípios centrais:**
 - Toda tarefa parte de uma branch base atualizada, vive em ambiente isolado (worktree ou
   equivalente) **dentro do sub-projeto que toca**, sai com testes e entra via PR revisado.
-- Specs/plans vivem no diretório declarado por `specs_dir` no Profile — **nunca** dentro do
-  código do sub-projeto.
+- Specs/plans vivem onde a **Regra de Destino** manda (ver abaixo) — **nunca** dentro do
+  código do sub-projeto. Se o projeto tem gestor de memória, é no vault; senão, em `.specs/`.
 - **A cerimônia é dimensionada pela lane** (ver `references/lanes.md`). Tarefas pequenas
   correm enxutas; features grandes recebem o pipeline completo.
 - **Review antes do commit é obrigatório em toda lane** — nunca é pulado, só encadeado.
@@ -47,6 +47,10 @@ não está mapeado — está em [`references/project-profile.md`](references/pro
   precisa declarar um Project Profile antes de usar este workflow.
 - Todo comando de teste/lint/build/integração citado em qualquer fase adiante **vem do
   Profile** — nunca hardcode um comando aqui.
+- **Resolva também o destino de spec/memória**: o `CLAUDE.md` declara um bloco `memory:`?
+  Se sim, o projeto tem gestor de memória — spec/plano vão para o vault e a memória da tarefa
+  é obrigatória (carregue `memory-graph:memory-vault`). Se não, vale o `specs_dir` do Profile
+  ou o fallback `.specs/`. Ver a **Regra de Destino** na Fase 3.
 
 ---
 
@@ -169,8 +173,44 @@ seguintes.
 Saída esperada: spec (com requisitos rastreáveis), design (só quando há decisões de
 arquitetura genuínas) e uma lista de tasks atômicas — cada uma com What, Where (paths
 exatos), Depends on, Reuses, ID de requisito, Done when, Tests e mensagem de commit; tasks
-independentes marcadas para paralelismo. Tudo isso vai para o diretório declarado por
-`specs_dir` no Profile — nunca dentro do código do sub-projeto.
+independentes marcadas para paralelismo. Grave conforme a **Regra de Destino** abaixo.
+
+#### Regra de Destino — vault se houver, `.specs/` se não
+
+Resolva **nesta ordem**, uma única vez por tarefa, e diga ao usuário qual caminho valeu:
+
+1. **O `CLAUDE.md` declara um bloco `memory:`** (gestor de memória instalado) → grave **no
+   vault**, em `<vault>/70-Specs/<feature>/`, **sempre pelo `obsidian` CLI**. Carregue
+   `memory-graph:memory-vault` antes de escrever.
+2. **Sem bloco `memory:`, mas o Profile declara `specs_dir`** → use `specs_dir` como está.
+3. **Nenhum dos dois** → `.specs/<feature>/` na raiz, e **avise** que o projeto ganharia um
+   vault rodando `memory-graph:memory-vault-setup`.
+
+> `.specs/` é **fallback**, não o padrão. Não crie `.specs/` num projeto que já tem vault —
+> memória em dois lugares diverge, e a divergência não avisa.
+
+#### Formato canônico de nome — obrigatório nos três caminhos
+
+**`<Tipo> - <Título da feature>`**, com `<Tipo>` ∈ `Spec` · `Design` · `Tasks` · `Plan`:
+
+```
+<destino>/<feature>/
+├── Spec - <Título da feature>.md
+├── Design - <Título da feature>.md
+├── Tasks - <Título da feature>.md
+└── Plan - <Título da feature>.md
+```
+
+- O título é o da **feature**, não o H1 do documento — assim o tripé da mesma feature fica
+  junto na busca e no grafo.
+- Documento extra da mesma feature leva qualificador entre parênteses:
+  `Tasks - <Feature> (backend)`, `Plan - <Feature> (rollback)`, `Design - <Feature> (contexto)`.
+- Outro tipo de documento segue o mesmo padrão `<Tipo> - <Título da feature>`.
+- **Nunca** `spec.md` / `design.md` / `tasks.md`: dezenas de arquivos com o mesmo nome tornam
+  o wikilink ambíguo e o grafo ilegível.
+- **Sanitize o nome** contra `\ / : * ? " < > |` e `# ^ [ ]`. Ao gravar via `obsidian` CLI,
+  lembre que ele **só bloqueia `\ / :`** — os outros ele aceita e grava um nome inválido —
+  e que **retorna exit code 0 mesmo falhando**: confira o stdout e releia a nota.
 
 ### Preparação de Ambiente — Isolamento por Sub-projeto · main · (paralelo à Fase 3)
 
@@ -230,6 +270,20 @@ o ambiente isolado (remova worktree/branch).
 
 ---
 
+## Fechamento — Registrar o que foi aprendido · main
+
+Se o projeto declara um bloco `memory:`, a tarefa **não está concluída** sem registro:
+
+- Decisão de arquitetura, gotcha que custou tempo, incidente resolvido ou contrato verificado
+  ao vivo → nota no vault (`20-Projetos/<Produto>/` ou `30-Referencia/`), via `obsidian` CLI.
+- **Sempre** uma linha no log do mês (`90-Log/AAAA-MM.md`) com o que foi feito e o link da nota.
+- Nada disso é opcional, e nada disso é escrito com `Write`/`Edit` — só pelo CLI.
+
+O protocolo completo (taxonomia, frontmatter, validação pós-gravação) está em
+`memory-graph:memory-vault`. Sem bloco `memory:`, pule esta fase.
+
+---
+
 ## Dispatch de Skill Expert por Sub-projeto
 
 Para cada sub-projeto tocado, carregue a skill expert de **stack** que o Project Profile
@@ -263,13 +317,16 @@ MANDATO: orquestrador NUNCA implementa/analisa/ajusta código — só edição t
 
 1. Discover      → main · Project Profile resolvido · skill(s) expert carregada(s) · sync com a base
 2. Brainstorm    → main · classificar lane · resolver ambiguidade
-3. Spec+Plan     → subagente (modelo de maior raciocínio, lanes M/L) → specs no diretório do Profile
+3. Spec+Plan     → subagente (modelo de maior raciocínio, lanes M/L)
+   DESTINO       → bloco memory:? vault/70-Specs/<feature>/ · senão specs_dir · senão .specs/
+   NOME          → "<Tipo> - <Título da feature>"  (Spec|Design|Tasks|Plan) — nunca spec.md
 Env prep         → main · ambiente isolado por sub-projeto · paralelo à Fase 3
 6-S (lane S)     → subagente dev (TDD) → subagente review no diff final → commit
 6 (lanes M/L)    → subagentes dev em paralelo quando independentes · reviews ENCADEADAS
 7. Lint + tests  → main, direto — reproduzir CADA check de CI na forma exata do Profile
 8. PR            → main · sincronizar com a base primeiro · PR por sub-projeto · review final do PR
 Cleanup          → remover ambiente isolado + branch, por sub-projeto
+Fechamento       → se há bloco memory:: nota no vault + linha em 90-Log/AAAA-MM.md (via CLI)
 ```
 
 ---
@@ -283,8 +340,13 @@ Cleanup          → remover ambiente isolado + branch, por sub-projeto
 - Não classificar a lane antes de começar (tratar tudo como pipeline completo por padrão)
 - Escrever código antes de Spec+Plan estar pronto (lanes M/L) — ou escrever spec/plano para
   uma tarefa de lane S
-- Escrever spec/plano dentro do código de um sub-projeto em vez do diretório declarado pelo
-  Profile
+- Escrever spec/plano dentro do código de um sub-projeto em vez do destino resolvido na Fase 3
+- Criar `.specs/` num projeto que **já tem** bloco `memory:` — memória em dois lugares diverge
+- Nomear documento de planejamento como `spec.md`/`design.md`/`tasks.md` em vez de
+  `<Tipo> - <Título da feature>`
+- Gravar no vault com `Write`/`Edit` em vez do `obsidian` CLI, ou confiar no exit code do
+  `create` sem conferir o stdout
+- Encerrar a tarefa sem nota + linha no log quando o projeto declara bloco `memory:`
 - Um prompt de subagente que diz "carregue a skill e leia os arquivos de plano" em vez de
   colar o contexto
 - Um prompt de review sem o diff colado inline

@@ -28,7 +28,7 @@ subprojects:
     ux_default: expert-frontend-web          # produto web-first / dark-first
   # fora do workflow (ad hoc): sub-projetos de infraestrutura, scripts, serviços de terceiros
 vcs:       { base: <base>, pr_target: <base>, prefixes: [feature, fix, hotfix], hotfix_base: <main> }
-specs_dir: .specs/<feature>/
+specs_dir: <destino>/<feature>/    # ver bloco memory: — .specs/ só como fallback
 commands:
   expert-backend-go:
     test:  "<comando de teste do Profile>"
@@ -53,8 +53,36 @@ ci_gotchas: |
 
 > O formato de referência é YAML; um projeto pode declarar o Profile em tabela Markdown
 > equivalente. O que importa é o `workflow-dev` conseguir resolver: sub-projetos, stack por
-> path, comandos por stack, convenção de branch/PR, `specs_dir` e (se houver banco) o bloco
-> `database`.
+> path, comandos por stack, convenção de branch/PR, `specs_dir` e (se houver) os blocos
+> `database` e `memory`.
+
+## Bloco `memory` — onde vivem memória, spec e plano
+
+Opcional, mas quando presente **manda mais que `specs_dir`**. Declarado no `CLAUDE.md` da raiz
+pela skill `memory-graph:memory-vault-setup`:
+
+```yaml
+memory:
+  vault: <NomeDoVault>            # nome registrado no Obsidian (não o caminho)
+  path: <pasta/do/vault>          # relativo à raiz do projeto
+  produtos: [<Produto>, ...]      # subpastas de 20-Projetos/
+  specs_dir: 70-Specs/<feature>/  # dentro do vault
+  pii: permitida | proibida | perguntar
+```
+
+### Regra de Destino (resolvida uma vez, na Fase 0)
+
+| Estado | Onde grava spec/plano | Memória da tarefa |
+|---|---|---|
+| Bloco `memory:` presente | `<vault>/70-Specs/<feature>/`, via `obsidian` CLI | **obrigatória** — nota + linha no log |
+| Sem `memory:`, com `specs_dir` | o `specs_dir` declarado | opcional |
+| Nenhum dos dois | `.specs/<feature>/` (**fallback**) | — · sugira `memory-graph:memory-vault-setup` |
+
+Em qualquer um dos três, o nome do documento é **`<Tipo> - <Título da feature>`**
+(`Spec` · `Design` · `Tasks` · `Plan`), com o título vindo da **feature**. Nunca `spec.md`.
+
+> Projeto com bloco `memory:` **não** deve ganhar um `.specs/` — memória em dois lugares
+> diverge, e a divergência não avisa.
 
 ## Detecção de stack (o "identificar a linguagem")
 
@@ -88,6 +116,8 @@ UX/UI/interação é um **eixo separado** da engenharia. Ao tocar arquivos de um
   aplicável, UX (`ux_default`/`ux_overrides`).
 - **Comandos por stack** — test/lint/types/build, na forma exata que o CI usa.
 - **Convenção de branch/PR** — branch base, alvo de PR, prefixos, base de hotfix.
-- **`specs_dir`** — onde ficam spec/design/tasks do projeto.
+- **`specs_dir`** — onde ficam spec/design/tasks, **quando não há bloco `memory:`**.
+- **Bloco `memory`** (se houver) — vault, produtos e política de PII; vence o `specs_dir` e
+  torna o registro de memória obrigatório ao fim da tarefa.
 - **Bloco `database`** (se houver banco) — nomes de conexão, dialeto, comandos de discovery,
   tabela de tracking de migration. Ver `expert-database` para o fluxo que consome esse bloco.

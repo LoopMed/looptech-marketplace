@@ -1,12 +1,29 @@
 # memory-graph
 
-A small, **100% local** MCP server + CLI that turns a directory of markdown
-memory files into something you can actually query: **semantic (vector)
-recall** and **graph traversal** over the `[[wikilinks]]` between memories.
+Memória de projeto num **vault Obsidian**, com **recall semântico (vetorial)** e
+**travessia do grafo de `[[wikilinks]]`** — MCP server + CLI, **100% local**.
 
-Markdown is always the source of truth. The SQLite index (`.db`) is a
-disposable, derived artifact — delete it any time and `reindex` rebuilds it.
-The tool never edits your `.md` files.
+**Divisão de papéis:**
+
+| Camada | Quem faz | Como |
+|---|---|---|
+| **Escrita** | `obsidian` CLI | `create` / `append` / `property:set` — mantém índice, backlinks e templates coerentes |
+| **Leitura por significado** | este plugin (MCP/CLI) | `search` / `get` / `neighbors` sobre o mesmo vault |
+| **Leitura por texto exato** | `obsidian` CLI | `search:context` / `read` / `backlinks` |
+
+O vault (markdown) é sempre a fonte da verdade. O índice SQLite é artefato
+derivado e descartável — apague quando quiser, `reindex` reconstrói.
+**Este pacote nunca escreve nos seus `.md`.**
+
+## Skills
+
+| Skill | Quando |
+|---|---|
+| `memory-graph:memory-vault` | Uso diário — buscar antes de implementar, gravar ao terminar, taxonomia, formato de nome, política de segredo, armadilhas do CLI |
+| `memory-graph:memory-vault-setup` | Primeira configuração — valida CLI/skill do Obsidian, cria o vault com o dev, grava o protocolo nos `CLAUDE.md`/`AGENTS.md`, encontra e migra memória legada |
+
+Pré-requisito das duas: o **`obsidian` CLI** instalado e o **Obsidian aberto** — o CLI
+conversa com o app rodando. Ver https://help.obsidian.md/cli
 
 ## 100% local — zero cloud
 
@@ -31,16 +48,18 @@ The tool never edits your `.md` files.
   again — no `reindex` step in between required. `reindex`/`memory_reindex`
   still exist for an explicit/manual refresh, but nothing depends on you
   remembering to run them.
-- **Auto-detected memory directory.** When `MEMORY_GRAPH_DIR` isn't set, the
-  directory is derived from the current Claude Code project:
-  `~/.claude/projects/<slug>/memory`, where `<slug>` is the project's
-  absolute path with every `/` replaced by `-` (e.g.
-  `/Users/you/projects/Foo` -> `-Users-you-projects-Foo`). Resolution order
-  is explicit flag (where one exists) -> `$MEMORY_GRAPH_DIR` ->
-  `$CLAUDE_PROJECT_DIR` (or `cwd`) via that slug rule. If nothing resolves,
-  commands that require a directory (like `reindex`) fail with a message
-  telling you to set `MEMORY_GRAPH_DIR`; query commands degrade gracefully
-  and just search whatever's already indexed.
+- **Auto-detected vault.** When `MEMORY_GRAPH_DIR` isn't set, the directory is
+  the project's **Obsidian vault** — any directory containing `.obsidian/`,
+  either the project root or an immediate subdirectory (the usual layout is
+  `<project>/<Name>Memory/`). Dependency and hidden directories are skipped;
+  when more than one vault exists the `*memory*`-named one wins, so the result
+  is deterministic rather than filesystem-order dependent.
+  Resolution order: explicit flag -> `$MEMORY_GRAPH_DIR` -> **vault** ->
+  legacy `~/.claude/projects/<slug>/memory` (kept so installs predating the
+  vault layout keep working — run `memory-graph:memory-vault-setup` to
+  migrate). If nothing resolves, commands that require a directory (like
+  `reindex`) fail pointing at the setup skill; query commands degrade
+  gracefully and search whatever's already indexed.
 - **Auto-detected index location.** Likewise, when `MEMORY_GRAPH_DB` isn't
   set, the SQLite index lives at a stable, project-scoped path *outside*
   the memory directory: `~/.claude/projects/<slug>/.memory-graph/index.db`
@@ -52,15 +71,23 @@ entrypoint (`cli.py` and `server.py`) — no duplicated resolution logic.
 
 ## Memory file format
 
+Qualquer nota do vault é indexável. O frontmatter recomendado pela skill
+`memory-graph:memory-vault`:
+
 ```markdown
 ---
-name: <id>              # canonical ID — [[links]] elsewhere target this
-description: <one line>
-metadata:
-  type: user | feedback | project | reference
+titulo: <título humano>
+tipo: projeto | referencia | decisao | feedback | spec | log | moc | sistema
+produto: [<Produto>]
+status: em-prod | ativo | em-andamento | pendente | arquivado
+atualizado: AAAA-MM-DD
+aliases: [<nome antigo>, <slug antigo>]   # mantém [[links]] antigos resolvendo
 ---
-Body markdown. Reference other memories as [[other-name]].
+Corpo em markdown. Referencie outras notas como [[outra nota]].
 ```
+
+O formato legado (`name:` / `description:` / `metadata.type:`) continua sendo
+lido — a resolução de link aceita os dois.
 
 `name:` is the ID. Real-world corpora are messy though (a memory's `name:`
 sometimes drifts from its filename, and `[[link]]` slugs sometimes target

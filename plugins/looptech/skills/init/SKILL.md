@@ -1,6 +1,6 @@
 ---
 name: init
-description: Use quando o plugin looptech acabou de ser instalado num projeto e nada foi configurado ainda, ou quando o usuário pede explicitamente "/looptech:init", "configurar o looptech", "inicializar o looptech", "setup do looptech", "onboarding de projeto", "configurar banco/serena/memória do looptech". Guia o projeto do zero ao pronto: Project Profile no CLAUDE.md, conexão de banco, MCP de navegação de código (Serena, opcional), memory-graph (opcional) e validação de runtimes. NÃO use para tarefas de desenvolvimento do dia a dia (isso é looptech:workflow-dev) nem quando o Project Profile já existe e está completo — nesse caso não há nada a inicializar.
+description: Use quando o plugin looptech acabou de ser instalado num projeto e nada foi configurado ainda, ou quando o usuário pede explicitamente "/looptech:init", "configurar o looptech", "inicializar o looptech", "setup do looptech", "onboarding de projeto", "configurar banco/serena/memória do looptech". Guia o projeto do zero ao pronto: Project Profile no CLAUDE.md, conexão de banco, MCP de navegação de código (Serena, opcional), memória em vault Obsidian (recomendado) e validação de runtimes. NÃO use para tarefas de desenvolvimento do dia a dia (isso é looptech:workflow-dev) nem quando o Project Profile já existe e está completo — nesse caso não há nada a inicializar.
 ---
 
 # looptech:init — Setup Guiado do Projeto
@@ -22,7 +22,8 @@ ritmo: **DETECTA → REPORTA → OFERECE corrigir (com confirmação)**.
 - Esta skill é **agnóstica de produto** — todo fato concreto (nomes de conexão, paths, comandos)
   vem do que for detectado ou do que o usuário confirmar, nunca de um exemplo hardcoded.
 - Passos 3 e 4 são **opcionais**: ofereça, explique o ganho, mas siga em frente sem eles se o
-  usuário recusar ou se o pré-requisito (`uv`) não estiver disponível.
+  usuário recusar ou se o pré-requisito não estiver disponível (`uv` para ambos; `obsidian`
+  CLI + app aberto para o Passo 4).
 
 ---
 
@@ -57,16 +58,19 @@ subprojects:
     ux_default: expert-frontend-pwa                     # mobile-first; use expert-frontend-web p/ web/admin
     ux_overrides: [ { match: "src/**/admin/**", ux: expert-frontend-web } ]
 vcs: { base: develop, pr_target: develop, prefixes: [feature, fix, hotfix], hotfix_base: main }
-specs_dir: .specs/<feature>/
+specs_dir: .specs/<feature>/                            # fallback; o bloco memory: abaixo vence
 commands:
   expert-backend-go:   { test: "<cmd>", lint: "<cmd CI>", build: "<cmd>" }
   expert-frontend-react:{ test: "<cmd>", lint: "<cmd>", types: "<cmd>", build: "<cmd>" }
 database: { connections: { stage: <nome>, prod: <nome> }, dialect: postgres, discovery: { tables: "\\dt", schema: "\\d <t>", indexes: "\\di <t>" }, migrations_table: schema_migrations }
+memory: { vault: <NomeDoVault>, path: <pasta>/, produtos: [<Produto>], specs_dir: 70-Specs/<feature>/, pii: perguntar }
 ```
 
-O bloco `database:` só é preenchido de fato no Passo 2 — deixe o placeholder aqui e retorne
-para completá-lo depois. Só grave no `CLAUDE.md` após confirmação explícita do usuário sobre
-o conteúdo final.
+Os blocos `database:` e `memory:` só são preenchidos de fato nos Passos 2 e 4 — deixe o
+placeholder aqui e retorne para completá-los depois. Se o usuário recusar o vault no Passo 4,
+**remova** o bloco `memory:` em vez de deixá-lo com placeholder: um `memory:` pela metade faz
+o `workflow-dev` mirar um vault que não existe. Só grave no `CLAUDE.md` após confirmação
+explícita do usuário sobre o conteúdo final.
 
 ---
 
@@ -145,22 +149,53 @@ Avise que:
 
 ---
 
-## Passo 4 — memory-graph (opcional — memória semântica)
+## Passo 4 — Memória em vault Obsidian (recomendado)
 
-Plugin MCP local de memória com busca semântica, auto-detectado pela pasta
-`~/.claude/projects/<slug>/memory`, onde `<slug>` é o caminho do projeto com `/` trocado por
-`-`. Opcional: mesma regra do Passo 3.
+Memória do projeto num **vault Obsidian**: escrita pelo `obsidian` CLI, recall semântico pelo
+MCP `memory-graph`. É o que faz decisão, gotcha e incidente sobreviverem entre sessões — e o
+que o `workflow-dev` consulta para não refazer trabalho já feito.
 
-**DETECTA:** rode `uv --version` (mesmo pré-requisito do Passo 3 — se já validado lá, não
-repita a checagem). Confirme se a pasta de memória do projeto já existe e se o plugin já está
-habilitado.
+**DETECTA** — três checagens independentes, não junte:
 
-**REPORTA:** informe se falta `uv`, e avise que o **primeiro uso** baixa um modelo local
-(fastembed, ~130MB) — isso acontece uma única vez, e pode demorar dependendo da conexão.
+```bash
+which obsidian                 # CLI instalado?
+obsidian vaults                # app aberto? lista os vaults registrados
+uv --version                   # pré-requisito do MCP (mesmo do Passo 3)
+```
 
-**OFERECE:** com confirmação, habilite o plugin (se ainda não estiver) e rode uma
-**reindexação inicial** para popular a memória a partir do conteúdo existente. Avise que os
-tools de memória só aparecem **depois de reiniciar a sessão**.
+E confirme no `CLAUDE.md` se já existe um bloco `memory:`, e no repositório se já existe uma
+pasta com `.obsidian/`.
+
+**REPORTA** — cada sintoma tem causa diferente:
+
+| Sintoma | Causa | Instrução |
+|---|---|---|
+| `which obsidian` vazio | CLI não instalado | Obsidian → Settings → **CLI** → habilitar. https://help.obsidian.md/cli |
+| `obsidian vaults` → *unable to find Obsidian* | App fechado | Abrir e manter aberto — o CLI fala com o app |
+| skills `obsidian:*` ausentes | Plugin não instalado | Instalar o plugin de skills do Obsidian |
+| sem bloco `memory:` | vault não configurado | Passo abaixo |
+
+Avise também que o **primeiro** uso do MCP baixa um modelo local (fastembed, ~130MB), uma
+única vez.
+
+**OFERECE**, com confirmação — delegue à skill dedicada, que faz o trabalho completo:
+
+```
+Skill("memory-graph:memory-vault-setup")
+```
+
+Ela cobre, em ordem: validar CLI e skills → criar o vault **junto com o dev** (nome, produtos,
+política de PII) → estrutura de pastas e templates → gravar o bloco `memory:` no `CLAUDE.md` e
+o protocolo em **todo** `CLAUDE.md` **e `AGENTS.md`** (outros agentes leem só o `AGENTS.md`) →
+varrer memória legada no repositório → perguntar o que migrar → migrar com backup, validação e
+verificação de paridade → perguntar apagar ou manter → consertar referências mortas.
+
+Se o usuário recusar o vault, siga sem ele: o `workflow-dev` cai no fallback `.specs/` e o
+projeto simplesmente não terá memória entre sessões. Diga isso explicitamente, não deixe
+implícito.
+
+Ao final, aponte o índice semântico para o vault e avise que os tools de memória só aparecem
+**depois de reiniciar a sessão**.
 
 ---
 
@@ -188,7 +223,7 @@ Encerre com um resumo binário por passo, nunca vago:
 ✅ Project Profile — gravado no CLAUDE.md (N sub-projetos)
 ✅ Banco — stage conectado, prod pendente de validação humana
 ⚠️ Serena — não configurado (usuário recusou)
-✅ memory-graph — habilitado, reindex inicial concluído
+✅ Memória — vault <Nome> criado, protocolo em N CLAUDE.md e M AGENTS.md, legado migrado
 ⚠️ Runtimes — falta gopls (instale com: <comando>)
 
 Próximos passos:
@@ -207,7 +242,8 @@ Passos 3/4.
 1. Project Profile   → ler CLAUDE.md → detectar sub-projetos/stack/UX → confirmar comandos (=CI) → gravar
 2. Banco             → onboarding do expert-database → linhas exatas do secret store → testar stage → gravar database: no Profile
 3. Serena (opcional) → checar uv → claude mcp add serena ... --project "<dir>" → LSP sob demanda → reiniciar sessão
-4. memory-graph (opc)→ checar uv → auto-detecção da pasta de memória → 1º uso baixa modelo (~130MB) → reindex inicial → reiniciar sessão
+4. Memória (vault)   → which obsidian + obsidian vaults + uv → delegar a memory-graph:memory-vault-setup
+                       (cria vault COM o dev, grava memory: + protocolo em CLAUDE.md E AGENTS.md, migra legado) → reiniciar sessão
 5. Runtimes          → validar ferramenta de cada stack do Profile → apontar instalação do que falta
 6. Resumo            → ✅/⚠️ por passo + lembrete de reiniciar sessão
 ```
@@ -220,10 +256,13 @@ Passos 3/4.
   mesmo que o usuário a tenha colado no chat e peça para gravar direto. O agente só mostra as
   linhas exatas; quem edita o arquivo é sempre o usuário, mesmo se ele pedir para pular esse passo
 - Testar ou configurar conexão de **produção** sem validação humana explícita
-- Rodar o comando `claude mcp add serena ...` ou habilitar memory-graph sem confirmação
+- Rodar o comando `claude mcp add serena ...` ou criar o vault de memória sem confirmação
+- Criar o vault sem perguntar ao dev o nome, os produtos e a política de PII
+- Migrar ou apagar memória legada dentro deste skill — isso é `memory-graph:memory-vault-setup`,
+  que faz backup, valida e pergunta antes de apagar
 - Sobrescrever um `## Project Profile` existente sem mostrar o diff e confirmar
 - Instalar uma ferramenta de runtime ausente sem perguntar antes
 - Declarar o Passo 6 "tudo pronto" sem ter reportado reiniciar a sessão quando Serena ou
-  memory-graph foram adicionados
+  o vault de memória foi adicionado
 - Hardcodar aqui um nome de produto, sub-projeto, tabela ou conexão — tudo é `<placeholder>`
   até o usuário confirmar

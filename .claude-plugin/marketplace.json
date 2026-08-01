@@ -16,7 +16,7 @@
     {
       "name": "memory-graph",
       "source": "./plugins/memory-graph",
-      "description": "Local semantic recall + [[link]] graph traversal over markdown memory files. 100% on-device (fastembed + sqlite-vec), zero cloud."
+      "description": "Memória de projeto num vault Obsidian: escrita pelo obsidian CLI, recall semântico + travessia de [[links]] 100% on-device (fastembed + sqlite-vec), zero nuvem. Skills: memory-vault (protocolo diário) e memory-vault-setup (vault + migração)."
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "memory-graph",
-  "version": "0.1.1",
-  "description": "Local semantic recall + [[link]] graph traversal over markdown memory files. 100% local, zero cloud — embeddings run on-device via fastembed.",
+  "version": "0.2.0",
+  "description": "Memória de projeto num vault Obsidian — escrita pelo obsidian CLI, recall semântico + travessia de [[links]] 100% on-device (fastembed + sqlite-vec), zero nuvem. Traz as skills memory-vault (protocolo diário) e memory-vault-setup (criação do vault + migração da memória legada).",
   "mcpServers": {
     "memory-graph": {
       "command": "uv",

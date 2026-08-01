@@ -2,7 +2,13 @@
 
 Every entrypoint (CLI subcommands, MCP server tools) resolves through this
 module so the auto-detection algorithm exists exactly once — no duplicated
-slug logic between cli.py / server.py / store.py.
+detection logic between cli.py / server.py / store.py.
+
+The memory directory is expected to be an **Obsidian vault** (a directory
+containing `.obsidian/`). Writes go through the `obsidian` CLI; this package
+only ever reads. The legacy `~/.claude/projects/<slug>/memory` layout is still
+auto-detected as a last resort so existing installs keep working until they
+migrate (see the `memory-graph:memory-vault-setup` skill).
 """
 
 from __future__ import annotations
@@ -28,15 +34,53 @@ def _claude_project_root(project_dir: str) -> Path:
     return Path.home() / ".claude" / "projects" / slug
 
 
+def is_vault(path: Path) -> bool:
+    """An Obsidian vault is any directory holding a `.obsidian/` config dir."""
+    return path.is_dir() and (path / ".obsidian").is_dir()
+
+
+def find_vault(project_dir: str) -> Path | None:
+    """Locate this project's Obsidian vault.
+
+    Checks the project root itself, then each immediate subdirectory (the
+    usual layout is `<project>/<Name>Memory/`). Hidden and dependency
+    directories are skipped. When several vaults exist, the one whose name
+    contains "memory" wins; otherwise the first in sorted order, so the result
+    is deterministic instead of filesystem-order dependent.
+    """
+    root = Path(os.path.abspath(project_dir))
+    if not root.is_dir():
+        return None
+    if is_vault(root):
+        return root
+
+    skip = {"node_modules", "venv", ".venv", "vendor", "dist", "build", "target"}
+    found = sorted(
+        (c for c in root.iterdir()
+         if not c.name.startswith(".") and c.name not in skip and is_vault(c)),
+        key=lambda p: p.name,
+    )
+    if not found:
+        return None
+    for c in found:
+        if "memory" in c.name.lower():
+            return c
+    return found[0]
+
+
 def resolve_memory_dir(explicit: str | None = None, *, required: bool = True) -> str | None:
     """Resolve the memory directory.
 
     Resolution order:
       1. `explicit` (e.g. a CLI `--dir` value) — must exist.
       2. `$MEMORY_GRAPH_DIR` — must exist.
-      3. Derived from `$CLAUDE_PROJECT_DIR` (else `cwd`) via
-         `~/.claude/projects/<slug>/memory`, where `<slug>` is the absolute
-         project path with every `/` replaced by `-`.
+      3. The project's **Obsidian vault** — a directory containing
+         `.obsidian/`, either the project root or an immediate subdirectory
+         (typically `<project>/<Name>Memory/`).
+      4. Legacy fallback: `~/.claude/projects/<slug>/memory`, where `<slug>`
+         is the absolute project path with every `/` replaced by `-`. Kept so
+         installs that predate the vault layout keep working; run the
+         `memory-graph:memory-vault-setup` skill to migrate.
 
     An `explicit` value or a set-but-missing `$MEMORY_GRAPH_DIR` always
     raises `FileNotFoundError` (the caller asked for that exact path).
@@ -59,18 +103,26 @@ def resolve_memory_dir(explicit: str | None = None, *, required: bool = True) ->
             "Point it at the folder containing your memory .md files."
         )
 
-    candidate = _claude_project_root(_current_project_dir()) / "memory"
-    if candidate.is_dir():
-        return str(candidate)
+    project_dir = _current_project_dir()
+
+    vault = find_vault(project_dir)
+    if vault is not None:
+        return str(vault)
+
+    legacy = _claude_project_root(project_dir) / "memory"
+    if legacy.is_dir():
+        return str(legacy)
 
     if not required:
         return None
 
     raise FileNotFoundError(
         "Could not auto-detect a memory directory.\n"
-        f"  Looked for: {candidate}\n"
-        "Set MEMORY_GRAPH_DIR to the folder containing your memory .md files, e.g.:\n"
-        "  export MEMORY_GRAPH_DIR=/path/to/memory"
+        f"  No Obsidian vault (a directory containing .obsidian/) found in: {project_dir}\n"
+        f"  No legacy memory directory at: {legacy}\n"
+        "Run the `memory-graph:memory-vault-setup` skill to create a vault, or point\n"
+        "MEMORY_GRAPH_DIR at an existing one:\n"
+        "  export MEMORY_GRAPH_DIR=/path/to/YourVault"
     )
 
 
