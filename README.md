@@ -13,7 +13,7 @@ conexão — isso garante que o mesmo plugin sirva qualquer repositório.
 
 ## O que é o plugin `looptech`
 
-Um único plugin, publicado neste marketplace, com **7 skills**:
+Um único plugin, publicado neste marketplace, com **8 skills** expert + `init`:
 
 1. `looptech:workflow-dev` — o **orquestrador**. Lê o Project Profile do `CLAUDE.md`
    do projeto, classifica o tamanho da tarefa (lane S/M/L), resolve qual(is) skill(s)
@@ -38,21 +38,25 @@ Um único plugin, publicado neste marketplace, com **7 skills**:
    componentes, hooks testáveis, TypeScript estrito (sem `any`/`@ts-ignore` sem
    justificativa), testes com vitest + RTL focados em comportamento visível, E2E no
    golden path, CSP e segurança de cliente.
-5. `looptech:expert-frontend-pwa` — eixo de **UX** orientado a mobile-first: layout
+5. `looptech:expert-frontend-vue` — engenharia Vue 3 + TypeScript: SFCs com
+   `<script setup>`, composables testáveis, TypeScript estrito (incl. `ref(null)` tipado),
+   testes com vitest + Vue Testing Library focados em comportamento visível, E2E no
+   golden path, CSP e segurança de cliente.
+6. `looptech:expert-frontend-pwa` — eixo de **UX** orientado a mobile-first: layout
    mobile-first, alvos de toque ≥ 44px, densidade e ergonomia de polegar, performance
    percebida, comportamento offline-tolerante.
-6. `looptech:expert-frontend-web` — eixo de **UX** orientado a web-first/desktop:
+7. `looptech:expert-frontend-web` — eixo de **UX** orientado a web-first/desktop:
    layouts densos, hover e atalhos de teclado, tabelas/grades para telas grandes,
    fluxos de operador/admin.
-7. `looptech:expert-database` — disciplina de query (query consts, zero `SELECT *`,
+8. `looptech:expert-database` — disciplina de query (query consts, zero `SELECT *`,
    parametrização, `null.T`, injection tests) **+** fluxo de execução operacional
    (preflight de conexão → discovery live de tabelas/schemas/indexes → query sargável
    → execução), gate de produção e migrations por existência (não por version).
 
 ### Os dois eixos do frontend
 
-`expert-frontend-react` cobre **engenharia** (stack, arquitetura, testes) e é sempre
-carregada em qualquer tarefa de frontend React. `expert-frontend-pwa` e
+`expert-frontend-react` e `expert-frontend-vue` cobrem **engenharia** (stack, arquitetura,
+testes) — carregue a da stack do sub-projeto. `expert-frontend-pwa` e
 `expert-frontend-web` cobrem **UX/UI/interação** — um eixo independente, por **área**
 do produto, não por sub-projeto. As duas skills de UX não repetem engenharia: elas
 assumem que a skill de engenharia já cobre arquitetura/TS/testes, e adicionam apenas a
@@ -60,9 +64,8 @@ orientação de interação (mobile-first ou web-first).
 
 Elas **compõem**: uma tarefa de frontend carrega a skill de engenharia da stack +
 a skill de UX resolvida pela área tocada (via `ux_default`/`ux_overrides` no Project
-Profile — veja abaixo). Isso permite combinações como "React mobile-first" ou "React
-web-first" sem duplicar a disciplina de engenharia, e deixa aberto o caminho para
-futuras combinações (ex.: "Vue mobile-first") sem reescrever nada.
+Profile — veja abaixo). Isso permite combinações como "React mobile-first", "Vue
+web-first", etc., sem duplicar a disciplina de engenharia.
 
 | Skill | Dispara quando... |
 |---|---|
@@ -70,6 +73,7 @@ futuras combinações (ex.: "Vue mobile-first") sem reescrever nada.
 | `looptech:expert-backend-go` | A tarefa toca um sub-projeto mapeado como stack Go no Project Profile |
 | `looptech:expert-backend-python` | A tarefa toca um sub-projeto mapeado como stack Python no Project Profile (ou inferido por `pyproject.toml`/`requirements.txt`) |
 | `looptech:expert-frontend-react` | A tarefa toca um sub-projeto mapeado como stack React+TS no Project Profile |
+| `looptech:expert-frontend-vue` | A tarefa toca um sub-projeto mapeado como stack Vue+TS no Project Profile (ou inferido por `package.json` com `vue`) |
 | `looptech:expert-frontend-pwa` | A área tocada resolve para UX mobile-first (`ux_default`/`ux_overrides` apontando `expert-frontend-pwa`) |
 | `looptech:expert-frontend-web` | A área tocada resolve para UX web-first (`ux_default`/`ux_overrides` apontando `expert-frontend-web`) |
 | `looptech:expert-database` | A tarefa toca a camada de persistência/banco de dados de qualquer sub-projeto |
@@ -161,8 +165,8 @@ Notas sobre o Profile:
   `specs_dir` e (se houver DB) o bloco `database`.
 - Para um path ausente no Profile, `workflow-dev` infere a stack pelo manifesto
   (`go.mod` → `expert-backend-go`; `pyproject.toml`/`requirements.txt` → `expert-backend-python`;
-  `package.json` com `react` → `expert-frontend-react`) e avisa que inferiu — o Profile é sempre
-  a fonte autoritativa quando presente.
+  `package.json` com `react` → `expert-frontend-react`; com `vue` → `expert-frontend-vue`) e
+  avisa que inferiu — o Profile é sempre a fonte autoritativa quando presente.
 - Regras de **segurança do produto** (locks nomeados, gating de endpoints sensíveis,
   CORS/gateway, rate-limit, auth de storage) continuam no `CLAUDE.md` do projeto —
   o plugin carrega apenas os princípios agnósticos correspondentes.
@@ -172,12 +176,12 @@ Notas sobre o Profile:
 
 ## Extensibilidade
 
-O naming por stack (`expert-backend-go`, `expert-backend-python`, `expert-frontend-react`, ...)
-já deixa o caminho aberto para novas skills expert conforme surgir necessidade real em algum
-projeto consumidor — por exemplo `expert-backend-node`, `expert-frontend-vue`, ou
-`expert-database-<outro dialeto>`. Essas skills não existem hoje (YAGNI); são criadas
-quando um projeto real exigir, seguindo o mesmo padrão: processo e disciplina
-transferível no plugin, fatos concretos no `CLAUDE.md` do projeto.
+O naming por stack (`expert-backend-go`, `expert-backend-python`, `expert-frontend-react`,
+`expert-frontend-vue`, ...) já deixa o caminho aberto para novas skills expert conforme
+surgir necessidade real em algum projeto consumidor — por exemplo `expert-backend-node` ou
+`expert-database-<outro dialeto>`. Essas skills são criadas quando um projeto real exigir,
+seguindo o mesmo padrão: processo e disciplina transferível no plugin, fatos concretos no
+`CLAUDE.md` do projeto.
 
 ## Licença
 

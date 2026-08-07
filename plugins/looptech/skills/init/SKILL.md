@@ -53,8 +53,8 @@ base/target de PR:
 ## Project Profile (looptech:workflow-dev)
 subprojects:
   - { path: <dir>/, stack: expert-backend-go }        # detectar por manifesto: go.mod→go, pyproject→python
-  - path: <dir>/                                        # package.json c/ react → react
-    stack: expert-frontend-react
+  - path: <dir>/                                        # package.json c/ react → react; c/ vue → vue
+    stack: expert-frontend-react                        # ou expert-frontend-vue
     ux_default: expert-frontend-pwa                     # mobile-first; use expert-frontend-web p/ web/admin
     ux_overrides: [ { match: "src/**/admin/**", ux: expert-frontend-web } ]
 vcs: { base: develop, pr_target: develop, prefixes: [feature, fix, hotfix], hotfix_base: main }
@@ -62,6 +62,7 @@ specs_dir: .specs/<feature>/                            # fallback; o bloco memo
 commands:
   expert-backend-go:   { test: "<cmd>", lint: "<cmd CI>", build: "<cmd>" }
   expert-frontend-react:{ test: "<cmd>", lint: "<cmd>", types: "<cmd>", build: "<cmd>" }
+  expert-frontend-vue:  { test: "<cmd>", lint: "<cmd>", types: "<cmd>", build: "<cmd>" }
 database: { connections: { stage: <nome>, prod: <nome> }, dialect: postgres, discovery: { tables: "\\dt", schema: "\\d <t>", indexes: "\\di <t>" }, migrations_table: schema_migrations }
 memory: { vault: <NomeDoVault>, path: <pasta>/, produtos: [<Produto>], specs_dir: 70-Specs/<feature>/, pii: perguntar }
 ```
