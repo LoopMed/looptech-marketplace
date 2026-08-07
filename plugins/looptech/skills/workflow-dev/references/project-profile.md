@@ -40,6 +40,11 @@ commands:
     lint:  "<comando de lint do Profile>"
     types: "<comando de checagem de tipos do Profile>"
     build: "<comando de build do Profile>"
+  expert-frontend-vue:
+    test:  "<comando de teste do Profile>"
+    lint:  "<comando de lint do Profile>"
+    types: "<comando de checagem de tipos do Profile>"
+    build: "<comando de build do Profile>"
 database:
   connections: { stage: <nome-da-conexão-stage>, prod: <nome-da-conexão-prod> }
   dialect: <dialeto>
@@ -90,9 +95,9 @@ O Profile é **autoritativo** — resolve stack por `path → stack`. Para um pa
 Profile, `workflow-dev` **infere pelo manifesto** do sub-projeto (ex.: presença de um
 manifesto de módulo Go implica `expert-backend-go`; um `pyproject.toml`/`requirements.txt`
 implica `expert-backend-python`; um manifesto de pacote JS com dependência de React implica
-`expert-frontend-react`) e **avisa explicitamente** que a stack foi
-inferida, não declarada. Isso entrega detecção automática sem abrir mão do determinismo —
-a inferência é sempre visível, nunca silenciosa.
+`expert-frontend-react`; com dependência de Vue implica `expert-frontend-vue`) e **avisa
+explicitamente** que a stack foi inferida, não declarada. Isso entrega detecção automática
+sem abrir mão do determinismo — a inferência é sempre visível, nunca silenciosa.
 
 ## Resolução de UX (por área, não por sub-projeto)
 
@@ -108,6 +113,9 @@ UX/UI/interação é um **eixo separado** da engenharia. Ao tocar arquivos de um
    `ux_default`), carrega **ambas** as skills de UX e sinaliza a fronteira explicitamente no
    handoff do subagente (ver `subagent-handoff.md`) — o subagente precisa saber que está
    operando em duas orientações de UX diferentes dentro da mesma task.
+
+A skill de engenharia despachada é a do Profile (`expert-frontend-react` **ou**
+`expert-frontend-vue`); a de UX (`pwa`/`web`) compõe com qualquer uma das duas.
 
 ## O que o Profile precisa resolver, no mínimo
 
