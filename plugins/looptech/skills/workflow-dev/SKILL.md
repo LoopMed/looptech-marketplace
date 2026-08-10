@@ -93,12 +93,18 @@ cada lane pula ou exige, e a regra de "quando em dúvida, promova" estão em
 O orquestrador (este agente principal) roda sempre no **modelo default da sessão** — não
 troca de modelo no meio da tarefa. Subagentes recebem um `model` explícito:
 
-| Trabalho | Roda em | Modelo |
-|----------|---------|--------|
-| Discover, brainstorm, preparação de ambiente, lint+tests, abertura de PR, coordenação | **agente principal** | default da sessão |
-| Spec+Plan (combinado, lanes M/L) | **subagente** | modelo de maior raciocínio disponível (ex.: opus) |
-| Implementação de código por task (toda lane, inclusive S) | **subagente(s)** | modelo intermediário (ex.: sonnet) |
-| Code review (toda lane) | **subagente** | modelo intermediário (ex.: sonnet) |
+| Trabalho | Roda em | Modelo | Effort |
+|----------|---------|--------|--------|
+| Discover, brainstorm, preparação de ambiente, lint+tests, abertura de PR, coordenação | **agente principal** | default da sessão | default da sessão |
+| Spec+Plan (combinado, lanes M/L) | **subagente** | modelo de maior raciocínio disponível (ex.: opus) | `xhigh` |
+| Implementação de código por task (toda lane, inclusive S) | **subagente(s)** | modelo intermediário (ex.: sonnet) | `xhigh` |
+| Code review (toda lane) | **subagente** | modelo intermediário (ex.: sonnet) | `xhigh` |
+
+**Effort (reasoning):** todo subagente é despachado com reasoning effort **`xhigh`** —
+independentemente do tier de modelo (Spec+Plan, dev, review, e qualquer subagente de
+investigação/ajuste). O **orquestrador (agente principal)** permanece no effort/modelo
+default da sessão; só os subagentes recebem `xhigh` explicitamente. Ao chamar um
+subagente, sempre passe `effort: xhigh` além do `model`.
 
 ---
 
@@ -111,6 +117,10 @@ que o orquestrador já sabia é desperdício puro — e é o que faz o subagente
   [`references/subagent-handoff.md`](references/subagent-handoff.md): Objetivo Final (com
   critério de sucesso binário), Estado Atual (referências exatas, coladas, não apontadas),
   Variáveis Críticas, e o conhecimento expert de arquitetura relevante aos arquivos tocados.
+- **Sempre defina `effort: xhigh`.** Todo despacho de subagente — Spec+Plan, dev, review, ou
+  qualquer subagente de investigação/ajuste — inclui `effort: xhigh` explicitamente, junto com
+  o `model` e o handoff rico (ver "Model Assignment" acima). O orquestrador nunca muda seu
+  próprio effort, só o do subagente que está despachando.
 - **Reviewers recebem o diff inline.** Rode o diff no agente principal e cole a saída no
   prompt de review, junto com o "Done when" da task. O reviewer não deve precisar explorar.
 - **Subagentes de desenvolvimento e debug** embutem também o loop de autonomia descrito em
