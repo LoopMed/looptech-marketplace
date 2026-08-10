@@ -250,12 +250,18 @@ quanto os testes.
 ### Fase 7 — Lint + Testes da Feature · main, direto
 
 Depois que **todas** as tasks estiverem commitadas, rode o gate completo diretamente via
-comando no agente principal — não spawne subagente para isso. **Reproduza localmente cada
-check que o CI do projeto roda**, na **mesma forma** que o CI roda (não só "rodar o linter",
-mas rodar exatamente como o pipeline declarado no Profile/CI do projeto roda, incluindo
-variantes como "somente linhas novas" quando o CI usar essa forma — os comandos exatos e os
-gotchas de CI vêm de `ci_gotchas` no Profile). Não abra o PR antes de todo comando do gate
-passar; reporte falhas literalmente, nunca declare sucesso sem colar a saída do comando.
+comando no agente principal — não spawne subagente para isso. Rode **todo** comando de
+gate declarado no Profile para as stacks tocadas (lint, testes, types, build, integração —
+o que o Profile listar), **antes** de abrir o PR. **O CI do projeto pode rodar pouco ou
+nada** (ex.: projetos onde o pipeline só builda/deploya sem lint nem teste) — por isso o CI
+**não é a rede de segurança; o gate local é.** Rode o gate completo local mesmo quando o CI
+não cobrir aquele check. Reproduza também, na **mesma forma** que o CI roda, cada check que
+o CI efetivamente executa (não só "rodar o linter", mas na forma exata do pipeline
+declarado no Profile/CI, incluindo variantes como "somente linhas novas" quando o CI usar
+essa forma — os comandos exatos e os gotchas de CI vêm de `ci_gotchas` no Profile), mas
+**nunca dependa do CI** para pegar lint/test/build/types que ele não roda. Não abra o PR
+antes de todo comando do gate local passar; reporte falhas literalmente, nunca declare
+sucesso sem colar a saída do comando.
 
 ### Fase 8 — Disciplina de Commit & PR · main
 
@@ -323,7 +329,8 @@ MANDATO: orquestrador NUNCA implementa/analisa/ajusta código — só edição t
 Env prep         → main · ambiente isolado por sub-projeto · paralelo à Fase 3
 6-S (lane S)     → subagente dev (TDD) → subagente review no diff final → commit
 6 (lanes M/L)    → subagentes dev em paralelo quando independentes · reviews ENCADEADAS
-7. Lint + tests  → main, direto — reproduzir CADA check de CI na forma exata do Profile
+7. Lint + tests  → main, direto — gate COMPLETO do Profile antes do PR (CI não é a rede
+                    de segurança); reproduzir também CADA check de CI na forma exata dele
 8. PR            → main · sincronizar com a base primeiro · PR por sub-projeto · review final do PR
 Cleanup          → remover ambiente isolado + branch, por sub-projeto
 Fechamento       → se há bloco memory:: nota no vault + linha em 90-Log/AAAA-MM.md (via CLI)
@@ -358,6 +365,8 @@ Fechamento       → se há bloco memory:: nota no vault + linha em 90-Log/AAAA-
 - Abrir um PR antes de lint + testes estarem verdes na forma exata que o CI do projeto usa
 - Rodar o linter/gate na forma "repositório inteiro" quando o CI do projeto usa uma forma
   restrita (ex.: só linhas novas) — comparar contra a forma errada mascara um bloqueador real
+- Abrir PR confiando que o CI vai pegar erros de lint/test/build que ele não roda — se o CI
+  do projeto roda pouco ou nada, o gate completo local (Fase 7) é a única rede de segurança
 - Comitar pulando hooks de verificação, empurrar direto para a branch base, ou adicionar
   arquivos às cegas
 - Abrir PR com o prefixo/target de branch errado para o tipo de mudança declarado no Profile
