@@ -1,8 +1,10 @@
 # Security review — falhas que podem prejudicar a empresa
 
 Etapa obrigatória **antes de cada commit**, no mesmo diff do review de correção.
-Readonly: o subagente `security` **não escreve código**. Achado vira
-`ISSUES-FOUND` e volta para um subagente `impl`.
+Readonly: o agente nomeado **`expert-security`** **não escreve código**. Achado vira
+`ISSUES-FOUND` e volta para o agente expert da stack. Inclui pentest defensivo
+(`skills/expert-security/references/pentest.md`): superfície, threat model, tabela
+estática, scanners do repo. Sem exploit, sem probe em produção.
 
 O alvo não é estilo. É dano: perda de dinheiro, vazamento de dado, takeover de
 conta, fraude, incidente público, ou porta dos fundos em produção.

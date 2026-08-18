@@ -19,13 +19,15 @@ sirva qualquer repositório. Claude Code lê `CLAUDE.md`; Codex e Cursor leem
 
 ## O que é o plugin `looptech`
 
-Um único plugin, publicado neste marketplace, com **8 skills** expert + `init`:
+Um único plugin, publicado neste marketplace, com **9 skills** expert + `init` e
+**agentes nomeados** em `agents/` (mesmo nome da skill, spawnáveis no host):
 
 1. `looptech:workflow-dev` — o **orquestrador**. Lê o Project Profile do `CLAUDE.md`
    do projeto, classifica o tamanho da tarefa (lane S/M/L), resolve qual(is) skill(s)
    expert carregar por sub-projeto tocado, e conduz o ciclo completo
-   discover → brainstorm → spec+plan → implementação → review de correção →
-   review de segurança → lint/testes → PR.
+   discover → brainstorm → spec+plan → implementação (agente expert da stack) →
+   review de correção → review de segurança/pentest (`expert-security`) →
+   lint/testes → PR.
    Atua como **puro orquestrador**: nunca implementa/analisa/ajusta código por conta
    própria (exceto edição trivial ≤ 100 caracteres) — tudo isso é delegado a subagentes,
    com handoff rico, loop de autonomia (ReAct) e critérios de sucesso obrigatórios.
@@ -59,6 +61,9 @@ Um único plugin, publicado neste marketplace, com **8 skills** expert + `init`:
    parametrização, `null.T`, injection tests) **+** fluxo de execução operacional
    (preflight de conexão → discovery live de tabelas/schemas/indexes → query sargável
    → execução), gate de produção e migrations por existência (não por version).
+9. `looptech:expert-security` — review de segurança e pentest **defensivo** do diff
+   (superfície, threat model, tabela de dano à empresa, scanners do repo). Readonly.
+   Sem exploit, sem probe em produção.
 
 ### Os dois eixos do frontend
 
@@ -84,6 +89,7 @@ web-first", etc., sem duplicar a disciplina de engenharia.
 | `looptech:expert-frontend-pwa` | A área tocada resolve para UX mobile-first (`ux_default`/`ux_overrides` apontando `expert-frontend-pwa`) |
 | `looptech:expert-frontend-web` | A área tocada resolve para UX web-first (`ux_default`/`ux_overrides` apontando `expert-frontend-web`) |
 | `looptech:expert-database` | A tarefa toca a camada de persistência/banco de dados de qualquer sub-projeto |
+| `looptech:expert-security` | Review de segurança / pentest defensivo de todo diff de código (agente `expert-security`) |
 
 ## Como instalar
 
@@ -238,6 +244,7 @@ plugins/
     .codex-plugin/plugin.json
     .cursor-plugin/plugin.json
     commands/                       # slash commands do Cursor (/init, /workflow-dev)
+    agents/                         # agentes nomeados (experts + plan + review + security)
     skills/
   memory-graph/
     .claude-plugin/plugin.json
@@ -249,7 +256,7 @@ plugins/
     skills/
 ```
 
-Versões dos três manifests de cada plugin precisam andar juntas (`looptech` 0.5.0,
+Versões dos três manifests de cada plugin precisam andar juntas (`looptech` 0.6.0,
 `memory-graph` 0.3.0).
 
 ## Extensibilidade

@@ -1,7 +1,7 @@
 {
   "name": "looptech",
-  "version": "0.5.0",
-  "description": "Agnostic dev workflow orchestrator + guided init + stack-expert skills (backend-go, backend-python, frontend-react/vue engineering, frontend-pwa/web UX, database).",
+  "version": "0.6.0",
+  "description": "Agnostic dev workflow orchestrator + named expert agents (go/python/react/vue/pwa/web/database/security) + guided init.",
   "author": {
     "name": "LoopTech",
     "email": "contato@loopmed.com.br",
@@ -23,9 +23,11 @@
     "python",
     "fastapi",
     "pwa",
-    "ux"
+    "ux",
+    "security"
   ],
   "skills": "./skills/",
+  "agents": "./agents/",
   "interface": {
     "displayName": "LoopTech",
     "shortDescription": "Agnostic engineering workflow and stack-expert skills",

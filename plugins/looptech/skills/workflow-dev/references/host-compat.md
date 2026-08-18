@@ -59,7 +59,7 @@ the host's native field. Never put a vendor model name in the skill text.
 |---|---|---|
 | Claude Code | native `Task` / subagent tool | `model` (and native effort if the host has one) from `agents.claude.<role>` or the catalog |
 | Codex | native `spawn_agent` (or current equivalent) | per-child model if the host still allows it; else inherit the parent and **still spawn** |
-| Cursor | native `Task` / named agent | prefer a **named agent** whose frontmatter already has the model; `Task(model:)` is often rejected except for `fast`. If named agents exist under `.cursor/agents/`, spawn by name |
+| Cursor | native `Task` / named agent | spawn the plugin agent **by name** (`expert-backend-go`, `expert-security`, `plan`, `review`, …). `Task(model:)` is often rejected except for `fast`; named agents in the plugin `agents/` directory are the reliable path |
 
 - Never skip a spawn because the host renamed the tool.
 - Never tell a subagent to "go load the skill and read the plan files".

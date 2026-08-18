@@ -1,6 +1,6 @@
 ---
 name: workflow-dev
-description: Use ao iniciar QUALQUER tarefa de desenvolvimento (feature, bugfix, hotfix, refactor) em um projeto que declara um Project Profile no CLAUDE.md ou AGENTS.md. Orquestra o ciclo completo — discover → spec+plan → env → implementar → review de correção → review de segurança → lint/tests → PR — dimensionado por lane (S/M/L), delegando análise/código/review a subagentes por papel (reasoning/code/critique/security), nunca por slug de modelo. Detecta a stack de cada sub-projeto e despacha as skills expert corretas. Funciona em Claude Code, Codex e Cursor. NÃO use para projetos sem Project Profile.
+description: Use ao iniciar QUALQUER tarefa de desenvolvimento (feature, bugfix, hotfix, refactor) em um projeto que declara um Project Profile no CLAUDE.md ou AGENTS.md. Orquestra o ciclo completo — discover → spec+plan → env → implementar no agente expert da stack → review → expert-security (pentest defensivo) → lint/tests → PR. Spawna agentes nomeados (plan, expert-backend-go/python, expert-frontend-react/vue/pwa/web, expert-database, review, expert-security) com a classe de modelo do Profile (reasoning/code/critique/security), nunca slug de marca. NÃO use para projetos sem Project Profile.
 ---
 
 # Workflow Dev — Orquestrador Agnóstico de Desenvolvimento
@@ -72,11 +72,11 @@ implementação, ajuste ou ajuste pós-review por conta própria — tudo é del
 
 | Ação | Quem faz |
 |------|----------|
-| Análise/investigação de código, mapeamento, blast radius | **subagente** (handoff rico + loop de autonomia) |
-| Implementação de qualquer task (inclusive lane S) | **subagente** dev |
-| Ajustes pós-review (aplicar CHANGES-REQUESTED) | **subagente** dev |
-| Code review de correção de todo diff | **subagente** `review` (`critique`) |
-| Review de segurança de todo diff de código | **subagente** `security` |
+| Análise/investigação de código, mapeamento, blast radius | agente nomeado **`plan`** |
+| Implementação de qualquer task (inclusive lane S) | agente **expert da stack** (`expert-backend-go`, …) |
+| Ajustes pós-review (aplicar CHANGES-REQUESTED / ISSUES-FOUND) | o mesmo agente expert da stack |
+| Code review de correção de todo diff | agente nomeado **`review`** |
+| Review de segurança / pentest defensivo | agente nomeado **`expert-security`** |
 | **Edição trivial ≤ 100 caracteres** (typo, bump de versão, uma linha de config) | orquestrador pode fazer direto |
 | Coordenação: ler o Project Profile, classificar a lane, colar contexto, despachar, coletar síntese | orquestrador |
 | Rodar comandos de verificação/git (test/lint/build, commit, push, abrir PR) | orquestrador executa o comando; **a análise da falha e o fix vão para subagente** |
@@ -114,9 +114,9 @@ um nome de LLM numa skill ou num handoff.
 | Discover git, brainstorm, env, lint+tests, PR, coordenação | orquestrador | `coord` |
 | Blast radius / código desconhecido (1b) | subagente `plan` | `reasoning` |
 | Spec+Plan (lanes M/L) | subagente `plan` | `reasoning` |
-| Implementação e ajuste pós-review | subagente `impl` | `code` |
-| Review de correção (Done when / diff) | subagente `review` | `critique` |
-| Review de segurança (dano à empresa) | subagente `security` | `security` (senão `critique` + checklist) |
+| Implementação e ajuste pós-review | agente expert da stack | `code` |
+| Review de correção (Done when / diff) | agente `review` | `critique` |
+| Review de segurança / pentest defensivo | agente `expert-security` | `security` (senão `critique` + checklist) |
 
 ---
 
@@ -165,8 +165,8 @@ resolvido na Fase 0 — nada aqui é hardcoded.
 
 ### Fase 1 — Discover Sub-projetos & Atualizar da Branch Base · main
 
-Identifique, via Project Profile, qual(is) sub-projeto(s) a tarefa toca; carregue a skill
-expert de stack de cada um (ver "Dispatch de Skill Expert" abaixo). Atualize cada sub-projeto
+Identifique, via Project Profile, qual(is) sub-projeto(s) a tarefa toca; resolva o
+**agente nomeado** de cada stack (ver "Dispatch" abaixo). Atualize cada sub-projeto
 afetado a partir da branch base declarada no Profile (`vcs.base`), tratando cada um como seu
 próprio repositório se assim estiver configurado. Salvo pedido explícito do usuário para
 partir de outra branch, sempre atualize e ramifique a partir da base declarada (ou da base de
@@ -247,15 +247,16 @@ de dependências não mudou) — o comando exato de instalação vem do Profile 
 
 ### Fase 6-S — Executar, Lane S · `impl` + `review` + `security`
 
-Mesmo na lane S, a implementação vai para **um subagente `impl`** — não para o orquestrador
-(ver Delegation Mandate). O orquestrador cola o diagnóstico/plano enxuto (escopo, arquivos,
-abordagem, comando de verificação) no handoff. Ciclo red→green→refactor no isolamento,
-tocando só os arquivos listados. Rode o gate de teste/lint do Profile.
+Mesmo na lane S, a implementação vai para o **agente expert da stack** — não para o
+orquestrador (ver Delegation Mandate). O orquestrador cola o diagnóstico/plano enxuto
+(escopo, arquivos, abordagem, comando de verificação) no handoff. Ciclo
+red→green→refactor no isolamento, tocando só os arquivos listados. Rode o gate de
+teste/lint do Profile.
 
 **Antes do commit**, no **mesmo** diff final, em paralelo:
 
-- subagente `review` (`critique`) — Done when + regras coladas → `APPROVE` / `CHANGES-REQUESTED`
-- subagente `security` — checklist de `security-review.md` → `SECURE` / `ISSUES-FOUND`
+- agente `review` — Done when + regras coladas → `APPROVE` / `CHANGES-REQUESTED`
+- agente `expert-security` — `security-review.md` + pentest defensivo → `SECURE` / `ISSUES-FOUND`
 
 Só commite com `APPROVE` **e** `SECURE`. Qualquer um dos dois recusar → novo `impl` →
 os dois reviews de novo. Security só pula se o diff for 100% não-runtime e o pulo for
@@ -324,8 +325,25 @@ O protocolo completo (taxonomia, frontmatter, validação pós-gravação) está
 
 ## Dispatch de Skill Expert por Sub-projeto
 
-Para cada sub-projeto tocado, carregue a skill expert de **stack** que o Project Profile
-declarar para aquele path (ou que a inferência por manifesto indicar, com aviso).
+Para cada sub-projeto tocado, **spawne o agente nomeado** da stack (não só “carregue a
+skill”). O corpo da disciplina continua em `skills/<nome>/SKILL.md`; o spawn é
+`agents/<nome>.md` com o modelo da classe (`agent-roles.md`).
+
+| Stack / eixo no Profile | Agente | Classe |
+|---|---|---|
+| `expert-backend-go` | `expert-backend-go` | `code` |
+| `expert-backend-python` | `expert-backend-python` | `code` |
+| `expert-frontend-react` | `expert-frontend-react` | `code` |
+| `expert-frontend-vue` | `expert-frontend-vue` | `code` |
+| `expert-frontend-pwa` | composto no handoff do React/Vue (ou `expert-frontend-pwa` se a task for só UX) | `code` |
+| `expert-frontend-web` | idem com `expert-frontend-web` | `code` |
+| persistência | **também** `expert-database` | `code` |
+| review de correção | `review` | `critique` |
+| review de segurança | `expert-security` | `security` |
+| spec/plan / blast radius | `plan` | `reasoning` |
+
+Cole no handoff as 5–15 linhas da skill correspondente. O agente ainda lê o
+`SKILL.md` inteiro na primeira ação.
 
 - **Persistência/banco de dados:** se a tarefa toca a camada de dados de qualquer stack,
   carregue **também** a skill expert de banco de dados — ela cobre disciplina de query,
@@ -354,15 +372,15 @@ FASE 0: Profile + papéis (plan/impl/review/security → id do host, nunca slug 
 LANE PRIMEIRO: S | M | L
 MANDATO: orquestrador NUNCA implementa/analisa/ajusta código — só edição trivial ≤100 chars
 
-1. Discover      → coord · skills expert · sync com a base · 1b blast radius = plan/reasoning
+1. Discover      → coord · agente expert resolvido · sync com a base · 1b = agente plan
 2. Brainstorm    → coord · classificar lane · resolver ambiguidade
 3. Spec+Plan     → plan/reasoning (lanes M/L)
    DESTINO       → bloco memory:? vault/70-Specs/<feature>/ · senão specs_dir · senão .specs/
    NOME          → "<Tipo> - <Título da feature>"  (Spec|Design|Tasks|Plan) — nunca spec.md
 Env prep         → coord · isolamento por sub-projeto · paralelo à Fase 3
-6-S (lane S)     → impl/code → review/critique + security no mesmo diff → commit
-6 (lanes M/L)    → impl em paralelo quando independentes · review+security ENCADEADOS por task
-7. Lint + tests  → coord, direto — gate COMPLETO do Profile (falhou → impl)
+6-S (lane S)     → expert da stack → review + expert-security no mesmo diff → commit
+6 (lanes M/L)    → experts em paralelo quando independentes · review+expert-security por task
+7. Lint + tests  → coord, direto — gate COMPLETO do Profile (falhou → expert da stack)
 8. PR            → coord · sync com a base · PR por sub-projeto
 Cleanup          → remover isolamento + branch
 Fechamento       → se há bloco memory:: nota no vault + linha em 90-Log/AAAA-MM.md (via CLI)
@@ -393,6 +411,8 @@ Fechamento       → se há bloco memory:: nota no vault + linha em 90-Log/AAAA-
 - Comitar qualquer código antes do `review` APROVAR **e** do `security` devolver SECURE
 - Comitar com `VEREDITO: ISSUES-FOUND` em aberto, ou aceitar `SECURE` sem evidência de checagem
 - Hardcodar slug de LLM (marca/modelo) nesta skill ou no handoff — papel + Profile/catálogo
+- Spawnar um `impl` genérico quando existe agente nomeado da stack (`expert-backend-go`, …)
+- Pedir ao `expert-security` um exploit, PoC ofensivo ou probe em produção
 - Reinstalar dependências às cegas em um ambiente isolado quando o lock não mudou
 - Spawnar um subagente só para rodar lint/testes (a Fase 7 roda no agente principal)
 - Abrir/atualizar um PR sem sincronizar com a branch base primeiro

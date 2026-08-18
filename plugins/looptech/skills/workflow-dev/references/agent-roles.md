@@ -45,11 +45,27 @@ agents:
 `<id do catálogo>` is whatever the host lists **today**. The plugin never
 suggests a default brand. `init` asks the human to map the catalog.
 
-## Spawn
+## Named agents (plugin `agents/`)
 
-Pass the resolved ID through the host's native spawn (`host-compat.md`). Prefer
-spawning a **named agent** when the host has one for that role; otherwise pass
-the model field the host accepts. The handoff (`subagent-handoff.md`) does not
-change — only who runs it.
+Spawn **by name**. Pass the resolved catalog ID as the host's model field
+(Cursor: prefer the named agent; if the host ignores plugin `model: inherit`,
+still spawn the name — the Profile ID is the override).
+
+| Workflow slot | Agent name | Class | Tools |
+|---|---|---|---|
+| Fase 1b / 3 | `plan` | `reasoning` | Read, Grep, Glob, Bash (readonly) |
+| Impl Go | `expert-backend-go` | `code` | Read, Write, Edit, Grep, Glob, Bash |
+| Impl Python | `expert-backend-python` | `code` | same |
+| Impl React | `expert-frontend-react` | `code` | same |
+| Impl Vue | `expert-frontend-vue` | `code` | same |
+| UX mobile-first | `expert-frontend-pwa` | `code` | same (serialize writes with engineering) |
+| UX web-first | `expert-frontend-web` | `code` | same |
+| Persistência | `expert-database` | `code` | same; prod gated |
+| Review de correção | `review` | `critique` | Read, Grep, Glob, Bash (readonly) |
+| Review de segurança / pentest defensivo | `expert-security` | `security` | Read, Grep, Glob, Bash (readonly; scanners only) |
+
+Frontend impl loads the UX agent **into the same handoff** when the area
+resolves to pwa/web (one writer). Only spawn a second UX agent if the task is
+UX-only.
 
 The orchestrator never changes its own model mid-task.

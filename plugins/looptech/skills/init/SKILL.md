@@ -134,6 +134,12 @@ cada uma em uma linha (`reasoning` = spec/plano/blast radius; `code` = implement
 `security` = review de segurança; se o host não tiver especialista, omita e o
 workflow usa `critique` + `security-review.md`).
 
+Os IDs alimentam o spawn dos **agentes nomeados** do plugin (`plan`,
+`expert-backend-go`, `expert-backend-python`, `expert-frontend-react`,
+`expert-frontend-vue`, `expert-frontend-pwa`, `expert-frontend-web`,
+`expert-database`, `review`, `expert-security`). `code` vale para todos os
+experts de implementação; `security` vale para `expert-security`.
+
 Grave só o host atual:
 
 ```yaml
