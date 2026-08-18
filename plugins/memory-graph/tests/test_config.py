@@ -259,3 +259,49 @@ def test_resolve_db_path_ignores_unexpanded_placeholder(tmp_path, monkeypatch):
 def test_resolve_db_path_explicit_wins(tmp_path):
     explicit = str(tmp_path / "custom.db")
     assert resolve_db_path(explicit) == explicit
+
+
+def _plugin_install(home: Path) -> Path:
+    """Fake Cursor plugin cache copy of memory-graph."""
+    sha = home / ".cursor" / "plugins" / "cache" / "x" / "memory-graph" / "sha"
+    (sha / "memory_graph").mkdir(parents=True)
+    (sha / "pyproject.toml").write_text("[project]\nname = 'memory-graph'\n")
+    (sha / ".cursor-plugin").mkdir()
+    return sha
+
+
+def test_resolve_memory_dir_ignores_plugin_cache_cwd(tmp_path, monkeypatch):
+    """cwd/CLAUDE in the plugin cache must not walk up to a random HOME vault."""
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    sha = _plugin_install(fake_home)
+    _vault(fake_home, "CompanyMemory")
+
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.delenv("MEMORY_GRAPH_DIR", raising=False)
+    monkeypatch.delenv("CURSOR_PROJECT_DIR", raising=False)
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(sha))
+    monkeypatch.chdir(sha)
+
+    assert resolve_memory_dir(required=False) is None
+
+
+def test_resolve_memory_dir_uses_cursor_project_dir_from_plugin_cwd(
+    tmp_path, monkeypatch
+):
+    """Launcher-exported CURSOR_PROJECT_DIR finds the vault two levels up."""
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    sha = _plugin_install(fake_home)
+    holding = fake_home / "holding"
+    project = holding / "IT" / "App"
+    project.mkdir(parents=True)
+    vault = _vault(holding, "CompanyMemory")
+
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.delenv("MEMORY_GRAPH_DIR", raising=False)
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(sha))
+    monkeypatch.setenv("CURSOR_PROJECT_DIR", str(project))
+    monkeypatch.chdir(sha)
+
+    assert resolve_memory_dir() == str(vault)

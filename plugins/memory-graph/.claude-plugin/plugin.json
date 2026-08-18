@@ -4,8 +4,11 @@
   "description": "Memória de projeto num vault Obsidian — escrita pelo obsidian CLI, recall semântico + travessia de [[links]] 100% on-device (fastembed + sqlite-vec), zero nuvem. Traz as skills memory-vault (protocolo diário) e memory-vault-setup (criação do vault + migração da memória legada).",
   "mcpServers": {
     "memory-graph": {
-      "command": "uv",
-      "args": ["run", "--directory", "${CLAUDE_PLUGIN_ROOT}", "python", "-m", "memory_graph", "serve"]
+      "command": "bash",
+      "args": [
+        "-c",
+        "set -euo pipefail; root=\"\"; for c in \"${PLUGIN_ROOT:-}\" \"${CLAUDE_PLUGIN_ROOT:-}\"; do if [ -n \"$c\" ] && [ -d \"$c/memory_graph\" ]; then root=\"$c\"; break; fi; done; if [ -z \"$root\" ]; then shopt -s nullglob; for cand in \"$HOME\"/.cursor/plugins/cache/*/memory-graph/*/ \"$HOME\"/.claude/plugins/cache/*/*/memory-graph/ \"$HOME\"/.claude/plugins/cache/*/*/plugins/memory-graph/; do if [ -d \"${cand}memory_graph\" ]; then root=\"${cand%/}\"; break; fi; done; fi; if [ -z \"$root\" ]; then echo \"memory-graph MCP: plugin root not found\" >&2; exit 1; fi; exec bash \"$root/scripts/serve.sh\""
+      ]
     }
   }
 }

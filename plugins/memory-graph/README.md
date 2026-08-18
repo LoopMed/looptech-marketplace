@@ -159,18 +159,23 @@ The plugin is the same folder. Each host reads its own manifest:
 
 | Host | Manifest | MCP config |
 |---|---|---|
-| Claude Code | `.claude-plugin/plugin.json` | inline `mcpServers` (kept for existing installs) |
-| Codex | `.codex-plugin/plugin.json` | `.mcp.json` → `./scripts/serve.sh` |
-| Cursor | `.cursor-plugin/plugin.json` | `mcp.json` → `./scripts/serve.sh` |
+| Claude Code | `.claude-plugin/plugin.json` | same `bash -c` → `scripts/serve.sh` |
+| Codex | `.codex-plugin/plugin.json` | `.mcp.json` → find root → `scripts/serve.sh` |
+| Cursor | `.cursor-plugin/plugin.json` | `mcp.json` → find root → `scripts/serve.sh` |
 
-MCP launch is `bash -c` + `uv run --directory <plugin-root>` (not `./scripts/serve.sh`).
-Cursor resolves relative commands against the **workspace**, so a `./scripts/...`
-path becomes `<seu-projeto>/scripts/serve.sh` and fails with ENOENT. The launcher
-uses `PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT` when the host sets them, otherwise the
-plugin cache. The vault
-directory is auto-detected; set `MEMORY_GRAPH_DIR` / `MEMORY_GRAPH_DB` only to
-override. On Cursor those names are optional plugin variables (Customize →
-Configure). Reinicie a sessão depois de instalar para o MCP aparecer.
+MCP launch is `bash -c` that finds the plugin root, then `exec bash "$root/scripts/serve.sh"`
+(not `command: ./scripts/serve.sh`). Cursor resolves relative commands against the
+**workspace**, so a `./scripts/...` path becomes `<seu-projeto>/scripts/serve.sh`
+and fails with ENOENT.
+
+Claude usually sets `CLAUDE_PROJECT_DIR`; Cursor and Codex do not.
+`scripts/serve.sh` (shared by all three) captures the host workspace (`pwd`)
+and exports it as `CURSOR_PROJECT_DIR` *before* `uv run --directory` chdirs
+into the plugin cache. Unexpanded `${…}` placeholders (injected when optional
+plugin variables are empty) are unset. You do **not** need to fill
+`MEMORY_GRAPH_DIR` / `MEMORY_GRAPH_DB` in Cursor Customize → Configure —
+those stay as optional overrides. The vault is auto-detected from the
+preserved workspace. Reinicie a sessão depois de instalar para o MCP aparecer.
 
 ## Storage backend
 
