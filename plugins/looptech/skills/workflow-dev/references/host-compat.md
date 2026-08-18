@@ -51,63 +51,23 @@ installed.
 
 ## Spawn a subagent
 
-The Delegation Mandate does not change. Only the spawn API does.
+The Delegation Mandate does not change. Only the spawn API does. Resolve the
+**role** first (`agent-roles.md`); then pass the resolved catalog ID through
+the host's native field. Never put a vendor model name in the skill text.
 
-| Host | Spawn | Model / effort |
+| Host | Spawn | How the role ID is passed |
 |---|---|---|
-| Claude Code | native `Task` / subagent tool | pass `model` + `effort: xhigh` |
-| Codex | native `spawn_agent` (or the current equivalent) | highest reasoning the host allows on the child; if per-child model/effort was removed, inherit the parent and **still spawn** |
-| Cursor | native `Task` / agent tool | highest thinking/reasoning the host allows on the child |
+| Claude Code | native `Task` / subagent tool | `model` (and native effort if the host has one) from `agents.claude.<role>` or the catalog |
+| Codex | native `spawn_agent` (or current equivalent) | per-child model if the host still allows it; else inherit the parent and **still spawn** |
+| Cursor | native `Task` / named agent | prefer a **named agent** whose frontmatter already has the model; `Task(model:)` is often rejected except for `fast`. If named agents exist under `.cursor/agents/`, spawn by name |
 
 - Never skip a spawn because the host renamed the tool.
 - Never tell a subagent to "go load the skill and read the plan files".
   Paste the handoff (`subagent-handoff.md`) into the child prompt.
 - If the host cannot spawn at all, say so and stop — do not silently do the
   child's work in the parent (except the ≤ 100 character exception).
-
-## Add an MCP server (Serena example)
-
-Same server, different registration. Confirm with the user first.
-
-**Claude Code**
-
-```
-claude mcp add serena -- uvx --from git+https://github.com/oraios/serena@<stable-tag> serena start-mcp-server --context ide-assistant --enable-web-dashboard false
-```
-
-**Codex** — prefer the CLI if it exists (`codex mcp add …` with the same
-`uvx` argv). Otherwise add to `~/.codex/config.toml`:
-
-```toml
-[mcp_servers.serena]
-command = "uvx"
-args = ["--from", "git+https://github.com/oraios/serena@<stable-tag>", "serena", "start-mcp-server", "--context", "ide-assistant", "--enable-web-dashboard", "false"]
-```
-
-**Cursor** — project `.cursor/mcp.json` (or the user's MCP settings):
-
-```json
-{
-  "mcpServers": {
-    "serena": {
-      "command": "uvx",
-      "args": [
-        "--from", "git+https://github.com/oraios/serena@<stable-tag>",
-        "serena", "start-mcp-server",
-        "--context", "ide-assistant",
-        "--enable-web-dashboard", "false"
-      ]
-    }
-  }
-}
-```
-
-`<stable-tag>` is the latest **release** on `github.com/oraios/serena/releases`,
-never git HEAD. New MCP tools appear only after the user **restarts the session**.
-
-`memory-graph` is bundled as a plugin MCP server — installing the
-`memory-graph` plugin is enough; do not re-register it by hand unless the
-user is running the server outside the plugin.
+- If the host rejects the resolved ID, report, fall back to the session
+  default, keep the role, continue.
 
 ## Restart wording
 

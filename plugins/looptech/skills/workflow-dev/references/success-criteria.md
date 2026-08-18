@@ -36,5 +36,8 @@ qualquer pessoa ou processo, sem precisar de julgamento subjetivo:
   (`subagent-handoff.md`) inclui a validação/critério de sucesso correspondente.
 - **Loop de autonomia** — todo Critério de Parada usado em `autonomy-react-loop.md` deriva
   diretamente daqui; não é reescrito ad hoc pelo subagente.
-- **Revisão antes de commit** — o subagente revisor confere o diff contra o critério de
-  sucesso declarado, não contra uma impressão geral de qualidade.
+- **Revisão de correção antes de commit** — o subagente `review` confere o diff contra o
+  critério de sucesso declarado, não contra uma impressão geral de qualidade.
+- **Revisão de segurança antes de commit** — o subagente `security` confere o mesmo diff
+  contra `security-review.md` (dano à empresa). `SECURE` sem evidência de checagem é
+  inválido; `ISSUES-FOUND` bloqueia o commit.

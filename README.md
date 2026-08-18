@@ -24,7 +24,8 @@ Um único plugin, publicado neste marketplace, com **8 skills** expert + `init`:
 1. `looptech:workflow-dev` — o **orquestrador**. Lê o Project Profile do `CLAUDE.md`
    do projeto, classifica o tamanho da tarefa (lane S/M/L), resolve qual(is) skill(s)
    expert carregar por sub-projeto tocado, e conduz o ciclo completo
-   discover → brainstorm → spec+plan → implementação → review → lint/testes → PR.
+   discover → brainstorm → spec+plan → implementação → review de correção →
+   review de segurança → lint/testes → PR.
    Atua como **puro orquestrador**: nunca implementa/analisa/ajusta código por conta
    própria (exceto edição trivial ≤ 100 caracteres) — tudo isso é delegado a subagentes,
    com handoff rico, loop de autonomia (ReAct) e critérios de sucesso obrigatórios.
@@ -139,10 +140,11 @@ Reinicie o Cursor (Developer: Reload Window). Skills e commands (`/init`,
 A skill `looptech:init` faz o setup guiado do zero ao pronto — detecta os sub-projetos e
 gera o **Project Profile** no `CLAUDE.md` **e** no `AGENTS.md`, configura a conexão de
 **banco** (via `looptech:expert-database`, sem gravar credencial silenciosamente e com
-PROD sempre gated), oferece o **Serena** (navegação de código, opcional — registra o MCP
-no host atual) e o **memory-graph** (memória semântica local, opcional), e valida os
-**runtimes** de cada stack. Cada passo é DETECTA → REPORTA → OFERECE (com sua
-confirmação). Reinicie a sessão ao final para os MCP servers novos aparecerem.
+PROD sempre gated), mapeia os **papéis de agente** (`reasoning` / `code` / `critique` /
+`security`) a partir do catálogo do host atual, oferece o **memory-graph** (memória
+semântica local, opcional), e valida os **runtimes** de cada stack. Cada passo é
+DETECTA → REPORTA → OFERECE (com sua confirmação). Reinicie a sessão ao final se um MCP
+novo (memory-graph) tiver sido adicionado.
 
 > Plugin irmão `memory-graph`: memória com recall vetorial + travessia de `[[links]]`,
 > 100% local. Claude: `/plugin install memory-graph@looptech`. Codex/Cursor: instale
@@ -154,9 +156,10 @@ confirmação). Reinicie a sessão ao final para os MCP servers novos aparecerem
 Um projeto adota o `looptech:workflow-dev` colando um bloco **Project Profile** no
 `CLAUDE.md` **e** no `AGENTS.md`. É o único ponto onde o projeto declara os fatos
 concretos que o plugin precisa para operar: sub-projetos e suas stacks, o eixo de UX por
-área, convenções de VCS, diretório de specs, comandos exatos por stack (espelhando o CI)
-e, se houver banco, as conexões e o dialeto. Claude Code lê `CLAUDE.md`; Codex e Cursor
-leem `AGENTS.md` — os dois arquivos precisam do mesmo bloco.
+área, convenções de VCS, diretório de specs, comandos exatos por stack (espelhando o CI),
+o mapa de papéis de agente (se houver) e, se houver banco, as conexões e o dialeto.
+Claude Code lê `CLAUDE.md`; Codex e Cursor leem `AGENTS.md` — os dois arquivos precisam
+do mesmo bloco.
 
 Template genérico (adapte os valores de exemplo ao seu projeto):
 
@@ -195,6 +198,12 @@ database:
 ci_gotchas: |
   - lint = only-new-issues; linha modificada conta como nova
   - CI não roda integration; rodar local se tocar repo layer
+agents:                                 # opcional; IDs vêm do catálogo do host
+  <host>:                               # cursor | claude | codex
+    reasoning: { model: <id> }          # spec/plan/blast radius
+    code:      { model: <id> }          # implementação
+    critique:  { model: <id> }          # review de correção (outro ID que não o code)
+    security:  { model: <id> }          # review de segurança; omitir se o host não tiver
   - merge develop→staging deploy; merge main→prod deploy+tag
 ```
 
@@ -240,7 +249,7 @@ plugins/
     skills/
 ```
 
-Versões dos três manifests de cada plugin precisam andar juntas (`looptech` 0.4.0,
+Versões dos três manifests de cada plugin precisam andar juntas (`looptech` 0.5.0,
 `memory-graph` 0.3.0).
 
 ## Extensibilidade

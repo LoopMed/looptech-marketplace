@@ -1,6 +1,6 @@
 ---
 name: workflow-dev
-description: Use ao iniciar QUALQUER tarefa de desenvolvimento (feature, bugfix, hotfix, refactor) em um projeto que declara um Project Profile no CLAUDE.md ou AGENTS.md. Orquestra o ciclo completo — discover → spec+plan → env → implementar → review → lint/tests → PR — dimensionado por lane (S/M/L), delegando toda análise/código a subagentes com handoff rico e loop de autonomia. Detecta a stack de cada sub-projeto e despacha as skills expert corretas (expert-backend-go, expert-backend-python, expert-frontend-react, expert-frontend-vue, expert-frontend-pwa, expert-frontend-web, expert-database). Funciona em Claude Code, Codex e Cursor. NÃO use para projetos sem Project Profile.
+description: Use ao iniciar QUALQUER tarefa de desenvolvimento (feature, bugfix, hotfix, refactor) em um projeto que declara um Project Profile no CLAUDE.md ou AGENTS.md. Orquestra o ciclo completo — discover → spec+plan → env → implementar → review de correção → review de segurança → lint/tests → PR — dimensionado por lane (S/M/L), delegando análise/código/review a subagentes por papel (reasoning/code/critique/security), nunca por slug de modelo. Detecta a stack de cada sub-projeto e despacha as skills expert corretas. Funciona em Claude Code, Codex e Cursor. NÃO use para projetos sem Project Profile.
 ---
 
 # Workflow Dev — Orquestrador Agnóstico de Desenvolvimento
@@ -9,11 +9,13 @@ description: Use ao iniciar QUALQUER tarefa de desenvolvimento (feature, bugfix,
 
 Ciclo completo de desenvolvimento para qualquer projeto que declare um **Project Profile**
 no `CLAUDE.md` e/ou `AGENTS.md`: **discover → brainstorm → spec+plan → preparar ambiente →
-implementar → review → lint+tests → PR**. O processo é o mesmo para qualquer stack; o que
-muda — paths, comandos, branches, conexões de banco — vem **inteiramente** do Profile do
-projeto. Esta skill carrega **processo e disciplina**, nunca fatos concretos de um produto
-específico. Roda em **Claude Code, Codex e Cursor** — o mapeamento de tools está em
-[`references/host-compat.md`](references/host-compat.md).
+implementar → review de correção → review de segurança → lint+tests → PR**. O processo é o
+mesmo para qualquer stack; o que muda — paths, comandos, branches, conexões de banco,
+**IDs de modelo** — vem **inteiramente** do Profile do projeto. Esta skill carrega
+**processo e disciplina**, nunca fatos concretos de um produto nem slugs de LLM. Roda em
+**Claude Code, Codex e Cursor** — tools em
+[`references/host-compat.md`](references/host-compat.md), papéis em
+[`references/agent-roles.md`](references/agent-roles.md).
 
 **Announce at start:** "Estou usando a skill workflow-dev para guiar esta tarefa."
 
@@ -29,7 +31,9 @@ ad hoc (documentação local, se houver).
   código do sub-projeto. Se o projeto tem gestor de memória, é no vault; senão, em `.specs/`.
 - **A cerimônia é dimensionada pela lane** (ver `references/lanes.md`). Tarefas pequenas
   correm enxutas; features grandes recebem o pipeline completo.
-- **Review antes do commit é obrigatório em toda lane** — nunca é pulado, só encadeado.
+- **Review de correção e review de segurança antes do commit são obrigatórios em toda
+  lane** — nunca pulados (exceto security em diff 100% não-runtime; ver
+  `security-review.md`).
 
 ---
 
@@ -51,6 +55,9 @@ mapeado — está em [`references/project-profile.md`](references/project-profil
   precisa declarar um Project Profile antes de usar este workflow.
 - Todo comando de teste/lint/build/integração citado em qualquer fase adiante **vem do
   Profile** — nunca hardcode um comando aqui.
+- **Resolva os papéis de agente** (`agent-roles.md`): leia `agents:` se existir, senão
+  o catálogo do host. Anuncie o mapa `plan/impl/review/security → id` (ou “papéis
+  colapsados”) antes da Fase 1.
 - **Resolva também o destino de spec/memória**: o Profile declara um bloco `memory:`?
   Se sim, o projeto tem gestor de memória — spec/plano vão para o vault e a memória da tarefa
   é obrigatória (carregue `memory-graph:memory-vault`). Se não, vale o `specs_dir` do Profile
@@ -68,7 +75,8 @@ implementação, ajuste ou ajuste pós-review por conta própria — tudo é del
 | Análise/investigação de código, mapeamento, blast radius | **subagente** (handoff rico + loop de autonomia) |
 | Implementação de qualquer task (inclusive lane S) | **subagente** dev |
 | Ajustes pós-review (aplicar CHANGES-REQUESTED) | **subagente** dev |
-| Code review de todo diff | **subagente** reviewer |
+| Code review de correção de todo diff | **subagente** `review` (`critique`) |
+| Review de segurança de todo diff de código | **subagente** `security` |
 | **Edição trivial ≤ 100 caracteres** (typo, bump de versão, uma linha de config) | orquestrador pode fazer direto |
 | Coordenação: ler o Project Profile, classificar a lane, colar contexto, despachar, coletar síntese | orquestrador |
 | Rodar comandos de verificação/git (test/lint/build, commit, push, abrir PR) | orquestrador executa o comando; **a análise da falha e o fix vão para subagente** |
@@ -78,9 +86,10 @@ implementação vai para **um subagente dev** (recebendo o diagnóstico que o or
 tem via handoff rico) e o review continua obrigatório antes do commit. O orquestrador só
 "mete a mão" em código quando a mudança inteira cabe em **≤ 100 caracteres**.
 
-**Loop de ajuste pós-review:** review devolve `CHANGES-REQUESTED` → **novo subagente dev**
-aplica os ajustes (recebendo o diff atual + os pontos do review como Estado Atual) →
-re-review → commit. O orquestrador nunca aplica o fix ele mesmo.
+**Loop de ajuste pós-review:** `review` devolve `CHANGES-REQUESTED` **ou** `security`
+devolve `ISSUES-FOUND` → **novo subagente `impl`** aplica os ajustes (diff atual +
+pontos colados) → re-review de correção **e** de segurança no diff novo → commit. O
+orquestrador nunca aplica o fix ele mesmo.
 
 ---
 
@@ -92,23 +101,22 @@ cada lane pula ou exige, e a regra de "quando em dúvida, promova" estão em
 
 ---
 
-## Model Assignment
+## Agent Roles — classe, nunca slug
 
-O orquestrador (este agente principal) roda sempre no **modelo default da sessão** — não
-troca de modelo no meio da tarefa. Subagentes recebem o **maior raciocínio que o host
-permitir no filho** (ver `host-compat.md`):
+O orquestrador roda no **default da sessão** (`coord`) e **não troca** de modelo no
+meio da tarefa. Cada spawn resolve um **papel** via
+[`references/agent-roles.md`](references/agent-roles.md) — Profile `agents.<host>` se
+existir, senão o catálogo do host, senão um único modelo com aviso. **Nunca** escreva
+um nome de LLM numa skill ou num handoff.
 
-| Trabalho | Roda em | Modelo | Effort |
-|----------|---------|--------|--------|
-| Discover, brainstorm, preparação de ambiente, lint+tests, abertura de PR, coordenação | **agente principal** | default da sessão | default da sessão |
-| Spec+Plan (combinado, lanes M/L) | **subagente** | modelo de maior raciocínio disponível | máximo do host |
-| Implementação de código por task (toda lane, inclusive S) | **subagente(s)** | modelo intermediário capaz | máximo do host |
-| Code review (toda lane) | **subagente** | modelo intermediário capaz | máximo do host |
-
-**Effort (reasoning):** todo subagente é despachado no **máximo** de reasoning/thinking
-do host (Claude Code: `effort: xhigh`; Codex/Cursor: o equivalente nativo — se o host
-não deixar effort por filho, herde o do pai e **ainda assim spawn**). O **orquestrador**
-permanece no effort/modelo default da sessão.
+| Trabalho | Papel | Classe |
+|----------|-------|--------|
+| Discover git, brainstorm, env, lint+tests, PR, coordenação | orquestrador | `coord` |
+| Blast radius / código desconhecido (1b) | subagente `plan` | `reasoning` |
+| Spec+Plan (lanes M/L) | subagente `plan` | `reasoning` |
+| Implementação e ajuste pós-review | subagente `impl` | `code` |
+| Review de correção (Done when / diff) | subagente `review` | `critique` |
+| Review de segurança (dano à empresa) | subagente `security` | `security` (senão `critique` + checklist) |
 
 ---
 
@@ -121,10 +129,9 @@ que o orquestrador já sabia é desperdício puro — e é o que faz o subagente
   [`references/subagent-handoff.md`](references/subagent-handoff.md): Objetivo Final (com
   critério de sucesso binário), Estado Atual (referências exatas, coladas, não apontadas),
   Variáveis Críticas, e o conhecimento expert de arquitetura relevante aos arquivos tocados.
-- **Sempre peça o máximo de reasoning no filho.** Todo despacho de subagente — Spec+Plan,
-  dev, review, ou qualquer subagente de investigação/ajuste — inclui o effort/model nativo
-  do host (ver "Model Assignment" e `host-compat.md`) junto com o handoff rico. O
-  orquestrador nunca muda seu próprio effort, só o do subagente que está despachando.
+- **Resolva o papel, não o slug.** Todo despacho declara o papel (`plan` / `impl` /
+  `review` / `security`) e passa o ID que a Fase 0 resolveu para aquele papel (ver
+  `agent-roles.md` e `host-compat.md`). O orquestrador nunca muda o próprio modelo.
 - **Reviewers recebem o diff inline.** Rode o diff no agente principal e cole a saída no
   prompt de review, junto com o "Done when" da task. O reviewer não deve precisar explorar.
 - **Subagentes de desenvolvimento e debug** embutem também o loop de autonomia descrito em
@@ -165,6 +172,10 @@ próprio repositório se assim estiver configurado. Salvo pedido explícito do u
 partir de outra branch, sempre atualize e ramifique a partir da base declarada (ou da base de
 hotfix, se aplicável).
 
+Se a área for genuinamente desconhecida (sem mapa, blast radius incerto), **Fase 1b** —
+delegue o mapeamento a um subagente `plan` (`reasoning`) com handoff rico; o orquestrador
+não explora o repositório inteiro no próprio contexto.
+
 ### Fase 2 — Brainstorm · main
 
 Rodado no agente principal — precisa do contexto completo da conversa. Objetivos: entender
@@ -175,7 +186,7 @@ ferramenta de mapeamento de codebase quando a área for genuinamente desconhecid
 existir — nunca construa esse mapa no meio de uma tarefa. A lane S pula direto para
 preparação de ambiente + execução enxuta.
 
-### Fase 3 — Spec + Plan (combinado) · subagente · modelo de maior raciocínio · (lanes M/L)
+### Fase 3 — Spec + Plan (combinado) · subagente `plan` (`reasoning`) · (lanes M/L)
 
 Delegue spec **e** plano a **um único subagente** — as duas fases compartilham todo o
 contexto, então separá-las em dois agentes só duplica o custo de partida fria. Rode em
@@ -234,32 +245,39 @@ hotfix). Siga as convenções de prefixo/branch/PR-target declaradas em `vcs` no
 Reaproveite cache de dependências sempre que possível (não reinstale às cegas quando o lock
 de dependências não mudou) — o comando exato de instalação vem do Profile de cada stack.
 
-### Fase 6-S — Executar, Lane S · subagente dev + 1 subagente review
+### Fase 6-S — Executar, Lane S · `impl` + `review` + `security`
 
-Mesmo na lane S, a implementação vai para **um subagente dev** — não para o orquestrador (ver
-Delegation Mandate). O orquestrador cola o diagnóstico/plano enxuto (uma frase de escopo,
-arquivos a tocar, abordagem, comando de verificação) no handoff do subagente. Ciclo
-red→green→refactor dentro do ambiente isolado, tocando só os arquivos listados. Rode o gate
-de teste/lint declarado no Profile. **Um subagente de review é obrigatório antes do commit**,
-recebendo o diff final + os critérios "Done when" + as regras aplicáveis coladas. Só comite
-após APPROVE, então avance para a Fase 8.
+Mesmo na lane S, a implementação vai para **um subagente `impl`** — não para o orquestrador
+(ver Delegation Mandate). O orquestrador cola o diagnóstico/plano enxuto (escopo, arquivos,
+abordagem, comando de verificação) no handoff. Ciclo red→green→refactor no isolamento,
+tocando só os arquivos listados. Rode o gate de teste/lint do Profile.
 
-### Fase 6 — Executar, Lanes M/L: Dev + Review Encadeado · subagentes
+**Antes do commit**, no **mesmo** diff final, em paralelo:
 
-Tasks marcadas como independentes rodam **concorrentemente**, um subagente por task; tasks
-dependentes rodam em ordem de dependência. **Encadeie as reviews — nunca serialize
-dev → review → dev.** A review de uma task só bloqueia **seu próprio commit**, não o
-desenvolvimento da próxima task:
+- subagente `review` (`critique`) — Done when + regras coladas → `APPROVE` / `CHANGES-REQUESTED`
+- subagente `security` — checklist de `security-review.md` → `SECURE` / `ISSUES-FOUND`
+
+Só commite com `APPROVE` **e** `SECURE`. Qualquer um dos dois recusar → novo `impl` →
+os dois reviews de novo. Security só pula se o diff for 100% não-runtime e o pulo for
+declarado em voz alta.
+
+Depois do commit, avance para a Fase 8 (a Fase 7 ainda roda no conjunto).
+
+### Fase 6 — Executar, Lanes M/L: Dev + Review + Security encadeados · subagentes
+
+Tasks independentes rodam **concorrentemente**, um `impl` por task; dependentes em ordem.
+**Encadeie as reviews — nunca serialize `impl → review → impl`.** A review de uma task só
+bloqueia **o commit dela**, não o `impl` da próxima:
 
 ```
-dev T1 ──► review T1 ──► commit T1
-        └─(enquanto isso)─► dev T2 ──► review T2 ──► commit T2
+impl T1 ──► review T1 ──┐
+            security T1 ─┴── APPROVE+SECURE → commit T1
+          └─(enquanto isso)─► impl T2 ──► review T2 + security T2 → commit T2
 ```
 
-Todo prompt de dev e de review segue o protocolo de `subagent-handoff.md` (contexto colado,
-não apontado) e, para dev/debug, embute o loop de `autonomy-react-loop.md`. **Nunca comite
-uma task antes que seu subagente de review aprove** — a review por task é tão obrigatória
-quanto os testes.
+`review` e `security` no **mesmo** diff, em paralelo (ver `security-review.md`). Todo
+prompt de `impl`/`review`/`security` segue `subagent-handoff.md`; `impl` embute também
+`autonomy-react-loop.md`. **Nunca commite** sem `APPROVE` **e** `SECURE` daquela task.
 
 ### Fase 7 — Lint + Testes da Feature · main, direto
 
@@ -332,22 +350,21 @@ declarar para aquele path (ou que a inferência por manifesto indicar, com aviso
 ## Quick Reference
 
 ```
-FASE 0: resolver Project Profile (CLAUDE.md + AGENTS.md) — path → stack → comandos → convenções
-LANE PRIMEIRO: S (poucos arquivos, escopo trivial) | M (feature clara) | L (multi-componente/ambíguo)
+FASE 0: Profile + papéis (plan/impl/review/security → id do host, nunca slug na skill)
+LANE PRIMEIRO: S | M | L
 MANDATO: orquestrador NUNCA implementa/analisa/ajusta código — só edição trivial ≤100 chars
 
-1. Discover      → main · Project Profile resolvido · skill(s) expert carregada(s) · sync com a base
-2. Brainstorm    → main · classificar lane · resolver ambiguidade
-3. Spec+Plan     → subagente (modelo de maior raciocínio, lanes M/L)
+1. Discover      → coord · skills expert · sync com a base · 1b blast radius = plan/reasoning
+2. Brainstorm    → coord · classificar lane · resolver ambiguidade
+3. Spec+Plan     → plan/reasoning (lanes M/L)
    DESTINO       → bloco memory:? vault/70-Specs/<feature>/ · senão specs_dir · senão .specs/
    NOME          → "<Tipo> - <Título da feature>"  (Spec|Design|Tasks|Plan) — nunca spec.md
-Env prep         → main · ambiente isolado por sub-projeto · paralelo à Fase 3
-6-S (lane S)     → subagente dev (TDD) → subagente review no diff final → commit
-6 (lanes M/L)    → subagentes dev em paralelo quando independentes · reviews ENCADEADAS
-7. Lint + tests  → main, direto — gate COMPLETO do Profile antes do PR (CI não é a rede
-                    de segurança); reproduzir também CADA check de CI na forma exata dele
-8. PR            → main · sincronizar com a base primeiro · PR por sub-projeto · review final do PR
-Cleanup          → remover ambiente isolado + branch, por sub-projeto
+Env prep         → coord · isolamento por sub-projeto · paralelo à Fase 3
+6-S (lane S)     → impl/code → review/critique + security no mesmo diff → commit
+6 (lanes M/L)    → impl em paralelo quando independentes · review+security ENCADEADOS por task
+7. Lint + tests  → coord, direto — gate COMPLETO do Profile (falhou → impl)
+8. PR            → coord · sync com a base · PR por sub-projeto
+Cleanup          → remover isolamento + branch
 Fechamento       → se há bloco memory:: nota no vault + linha em 90-Log/AAAA-MM.md (via CLI)
 ```
 
@@ -373,7 +390,9 @@ Fechamento       → se há bloco memory:: nota no vault + linha em 90-Log/AAAA-
   colar o contexto
 - Um prompt de review sem o diff colado inline
 - Serializar dev → review → dev quando as tasks são independentes — encadear
-- Comitar qualquer código antes do subagente de review aprovar (toda lane)
+- Comitar qualquer código antes do `review` APROVAR **e** do `security` devolver SECURE
+- Comitar com `VEREDITO: ISSUES-FOUND` em aberto, ou aceitar `SECURE` sem evidência de checagem
+- Hardcodar slug de LLM (marca/modelo) nesta skill ou no handoff — papel + Profile/catálogo
 - Reinstalar dependências às cegas em um ambiente isolado quando o lock não mudou
 - Spawnar um subagente só para rodar lint/testes (a Fase 7 roda no agente principal)
 - Abrir/atualizar um PR sem sincronizar com a branch base primeiro

@@ -118,6 +118,11 @@ ordem, sem variação de título:
 - **Próximos Passos** — a ação que o agente principal (ou o próximo subagente) precisa tomar
   a partir daqui.
 
+Subagente `review`: em Evidências, a última linha é `VEREDITO: APPROVE` ou
+`VEREDITO: CHANGES-REQUESTED`. Subagente `security`: última linha `VEREDITO: SECURE`
+ou `VEREDITO: ISSUES-FOUND` (ver `security-review.md`). Sem essa linha o orquestrador
+trata o review como inválido e não commita.
+
 ## Red flag
 
 Se um subagente está **"descobrindo"** algo que já era sabido pelo orquestrador — relendo um

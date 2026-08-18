@@ -1,6 +1,6 @@
 ---
 name: init
-description: Use quando o plugin looptech acabou de ser instalado num projeto e nada foi configurado ainda, ou quando o usuário pede explicitamente "/looptech:init", "$init", "/init", "configurar o looptech", "inicializar o looptech", "setup do looptech", "onboarding de projeto", "configurar banco/serena/memória do looptech". Guia o projeto do zero ao pronto: Project Profile no CLAUDE.md e AGENTS.md, conexão de banco, MCP de navegação de código (Serena, opcional), memória em vault Obsidian (recomendado) e validação de runtimes. Funciona em Claude Code, Codex e Cursor. NÃO use para tarefas de desenvolvimento do dia a dia (isso é looptech:workflow-dev) nem quando o Project Profile já existe e está completo — nesse caso não há nada a inicializar.
+description: Use quando o plugin looptech acabou de ser instalado num projeto e nada foi configurado ainda, ou quando o usuário pede explicitamente "/looptech:init", "$init", "/init", "configurar o looptech", "inicializar o looptech", "setup do looptech", "onboarding de projeto", "configurar banco/memória/modelos do looptech". Guia o projeto do zero ao pronto: Project Profile no CLAUDE.md e AGENTS.md, conexão de banco, mapa de papéis de agente (reasoning/code/critique/security) a partir do catálogo do host, memória em vault Obsidian (recomendado) e validação de runtimes. Funciona em Claude Code, Codex e Cursor. NÃO use para tarefas de desenvolvimento do dia a dia (isso é looptech:workflow-dev) nem quando o Project Profile já existe e está completo — nesse caso não há nada a inicializar.
 ---
 
 # looptech:init — Setup Guiado do Projeto
@@ -9,8 +9,8 @@ description: Use quando o plugin looptech acabou de ser instalado num projeto e 
 
 Setup **sob demanda**, rodado uma vez (ou revalidado) por projeto: leva um projeto recém-instalado
 do plugin looptech do zero ao pronto para o `looptech:workflow-dev` funcionar. Cobre 6 passos —
-Project Profile, banco, Serena, memory-graph, runtimes, resumo — cada um seguindo o mesmo
-ritmo: **DETECTA → REPORTA → OFERECE corrigir (com confirmação)**.
+Project Profile, banco, papéis de agente, memory-graph, runtimes, resumo — cada um seguindo o
+mesmo ritmo: **DETECTA → REPORTA → OFERECE corrigir (com confirmação)**.
 
 **Announce at start:** "Estou usando a skill looptech:init para configurar este projeto."
 
@@ -22,8 +22,8 @@ ritmo: **DETECTA → REPORTA → OFERECE corrigir (com confirmação)**.
 - Esta skill é **agnóstica de produto** — todo fato concreto (nomes de conexão, paths, comandos)
   vem do que for detectado ou do que o usuário confirmar, nunca de um exemplo hardcoded.
 - Passos 3 e 4 são **opcionais**: ofereça, explique o ganho, mas siga em frente sem eles se o
-  usuário recusar ou se o pré-requisito não estiver disponível (`uv` para ambos; `obsidian`
-  CLI + app aberto para o Passo 4).
+  usuário recusar (sem `agents:` o workflow escolhe pelo catálogo e avisa; sem vault cai em
+  `.specs/`). O Passo 4 exige `obsidian` CLI + app aberto.
 
 ---
 
@@ -70,13 +70,15 @@ commands:
   expert-frontend-vue:  { test: "<cmd>", lint: "<cmd>", types: "<cmd>", build: "<cmd>" }
 database: { connections: { stage: <nome>, prod: <nome> }, dialect: postgres, discovery: { tables: "\\dt", schema: "\\d <t>", indexes: "\\di <t>" }, migrations_table: schema_migrations }
 memory: { vault: <NomeDoVault>, path: <pasta>/, produtos: [<Produto>], specs_dir: 70-Specs/<feature>/, pii: perguntar }
+agents: { <host>: { reasoning: { model: <id> }, code: { model: <id> }, critique: { model: <id> }, security: { model: <id> } } }
 ```
 
-Os blocos `database:` e `memory:` só são preenchidos de fato nos Passos 2 e 4 — deixe o
-placeholder aqui e retorne para completá-los depois. Se o usuário recusar o vault no Passo 4,
-**remova** o bloco `memory:` em vez de deixá-lo com placeholder: um `memory:` pela metade faz
-o `workflow-dev` mirar um vault que não existe. Só grave no `CLAUDE.md` e no `AGENTS.md`
-após confirmação explícita do usuário sobre o conteúdo final.
+Os blocos `database:`, `memory:` e `agents:` só são preenchidos de fato nos Passos 2, 3 e 4
+— deixe o placeholder aqui e retorne para completá-los depois. Se o usuário recusar o vault
+no Passo 4, **remova** o bloco `memory:`. Se recusar o mapa de papéis no Passo 3, **remova**
+`agents:` (o workflow cai no catálogo do host). Placeholder pela metade faz o orquestrador
+mirar coisa que não existe. Só grave no `CLAUDE.md` e no `AGENTS.md` após confirmação
+explícita do usuário sobre o conteúdo final.
 
 ---
 
@@ -111,50 +113,41 @@ pergunte antes de tocar nela, mesmo para um teste de conectividade.
 
 ---
 
-## Passo 3 — Serena (opcional — navegação de codebase)
+## Passo 3 — Papéis de agente (opcional — mapa do catálogo do host)
 
-Serena expõe tools de navegação semântica de código (símbolos, referências, LSP da stack) via
-MCP. Opcional: ofereça, mas siga sem ele se recusado ou sem pré-requisito.
+O `workflow-dev` despacha por **papel** (`reasoning` / `code` / `critique` / `security`),
+nunca por marca de modelo. O bloco `agents:` diz, para **este host**, qual ID do catálogo
+entra em cada papel. Contrato em
+[`../workflow-dev/references/agent-roles.md`](../workflow-dev/references/agent-roles.md).
 
 **DETECTA:**
-- Rode `uv --version` (ou equivalente) para checar se `uv` está disponível — é pré-requisito.
-- Monte a lista de **sub-projetos candidatos** a partir do Project Profile (Passo 1): cada
-  sub-projeto cuja stack tem um LSP suportado (ex. Go→`gopls`, React/TS→`typescript-language-server`,
-  Python→`pyright`/`basedpyright`).
+- Qual é o host desta sessão (`host-compat.md`).
+- Quais modelos/agentes o host **lista agora** (UI, `/models`, config, `.cursor/agents/`,
+  o que estiver visível). Não invente um ID que não apareceu.
+- Se o Profile já tem `agents:`, valide se os IDs ainda existem no catálogo.
 
-**VALIDA:** para cada candidato, confirme que o diretório existe e tem o manifesto da stack
-(`go.mod`, `package.json`, `pyproject.toml`, …) e que o LSP correspondente está disponível ou
-pode ser baixado sob demanda. Descarte da lista o que não validar (e diga por quê).
+**REPORTA:** a lista crua do catálogo + o `agents:` atual (ou “ausente”).
 
-**REPORTA:** se `uv` faltar, informe que Serena depende dele e ofereça o link de instalação
-primeiro. Senão, mostre a lista **validada** de sub-projetos candidatos com a stack/LSP de cada.
+**OFERECE**, com confirmação — peça ao usuário para casar as quatro classes. Explique
+cada uma em uma linha (`reasoning` = spec/plano/blast radius; `code` = implementar;
+`critique` = review de correção, de preferência **outro** ID que não o `code`;
+`security` = review de segurança; se o host não tiver especialista, omita e o
+workflow usa `critique` + `security-review.md`).
 
-**PERGUNTA (obrigatório):** **pergunte ao usuário QUAIS sub-projetos validados ele quer
-registrar/indexar no Serena** — nunca registre todos por conta própria. Ofereça seleção
-múltipla (ex.: "todos", "só backend", "backend + frontend", …).
+Grave só o host atual:
 
-**OFERECE (com confirmação):** registre **um único** MCP server em modo **multi-projeto** (sem
-`--project`, para expor o `activate_project` e permitir navegar todos os escolhidos), **fixado
-numa release estável** e com o **dashboard web desligado**. Use o comando/arquivo do **host
-atual** — os três argv são iguais, só muda o registrador (ver `host-compat.md`):
+```yaml
+agents:
+  <host>:
+    reasoning: { model: <id do catálogo> }
+    code:      { model: <id do catálogo> }
+    critique:  { model: <id do catálogo> }
+    security:  { model: <id do catálogo> }   # omitir se não houver
+```
 
-| Host | Como registrar |
-|---|---|
-| Claude Code | `claude mcp add serena -- uvx --from git+https://github.com/oraios/serena@<tag-estável> serena start-mcp-server --context ide-assistant --enable-web-dashboard false` |
-| Codex | `codex mcp add serena --` com o mesmo argv `uvx …`, ou o bloco `[mcp_servers.serena]` em `~/.codex/config.toml` |
-| Cursor | entrada `serena` em `.cursor/mcp.json` (mesmo `command`/`args`) |
-
-- **`@<tag-estável>`**: use a **release mais recente** (veja `github.com/oraios/serena/releases`),
-  **nunca o git HEAD** — o HEAD pode vir com bugs de CLI/schema.
-- **`--enable-web-dashboard false`**: sem isso o Serena **abre uma aba do navegador a cada
-  start** do server (que reinicia a cada conexão) — é chato; desligue.
-- Se o usuário escolher **um só** sub-projeto, pode simplificar com `--project "<dir>"`.
-- Os sub-projetos escolhidos são **registrados sob demanda** no primeiro `activate_project`
-  (não dependa da CLI `serena project index/create`, que é instável).
-
-Avise que:
-- O **LSP da stack** é baixado sob demanda na primeira navegação — pode demorar na 1ª vez.
-- Os tools novos (e o dashboard desligado) só valem **depois de reiniciar a sessão** do host.
+Se o usuário recusar, **remova** `agents:` e siga: o workflow escolhe pelo catálogo e
+avisa. **Nunca** sugira um slug de marca como default — o ID vem do que o host listou
+ou do que o humano digitou.
 
 ---
 
@@ -169,7 +162,7 @@ que o `workflow-dev` consulta para não refazer trabalho já feito.
 ```bash
 which obsidian                 # CLI instalado?
 obsidian vaults                # app aberto? lista os vaults registrados
-uv --version                   # pré-requisito do MCP (mesmo do Passo 3)
+uv --version                   # pré-requisito do MCP memory-graph
 ```
 
 E confirme no `CLAUDE.md` **e** no `AGENTS.md` se já existe um bloco `memory:`, e no
@@ -230,17 +223,17 @@ Encerre com um resumo binário por passo, nunca vago:
 ```
 ✅ Project Profile — gravado no CLAUDE.md e AGENTS.md (N sub-projetos)
 ✅ Banco — stage conectado, prod pendente de validação humana
-⚠️ Serena — não configurado (usuário recusou)
+✅ Papéis — agents.<host> reasoning/code/critique/security mapeados
 ✅ Memória — vault <Nome> criado, protocolo em N CLAUDE.md e M AGENTS.md, legado migrado
 ⚠️ Runtimes — falta gopls (instale com: <comando>)
 
 Próximos passos:
-- Reinicie esta sessão do agente para os MCP servers novos (Serena/memory-graph) aparecerem.
+- Reinicie esta sessão se o MCP memory-graph foi adicionado.
 - <qualquer pendência levantada acima>
 ```
 
-Sempre destaque a necessidade de **reiniciar a sessão** se qualquer MCP novo foi adicionado nos
-Passos 3/4.
+Sempre destaque a necessidade de **reiniciar a sessão** se o MCP de memória foi adicionado
+no Passo 4.
 
 ---
 
@@ -249,11 +242,11 @@ Passos 3/4.
 ```
 1. Project Profile   → ler CLAUDE.md + AGENTS.md → detectar sub-projetos/stack/UX → confirmar comandos (=CI) → gravar nos dois
 2. Banco             → onboarding do expert-database → linhas exatas do secret store → testar stage → gravar database: no Profile
-3. Serena (opcional) → checar uv → registrar MCP no host (claude mcp add / codex mcp add / .cursor/mcp.json) → reiniciar sessão
+3. Papéis (opcional) → listar catálogo do host → usuário casa reasoning/code/critique/security → gravar agents.<host>
 4. Memória (vault)   → which obsidian + obsidian vaults + uv → delegar a memory-graph:memory-vault-setup
                        (cria vault COM o dev, grava memory: + protocolo em CLAUDE.md E AGENTS.md, migra legado) → reiniciar sessão
 5. Runtimes          → validar ferramenta de cada stack do Profile → apontar instalação do que falta
-6. Resumo            → ✅/⚠️ por passo + lembrete de reiniciar sessão
+6. Resumo            → ✅/⚠️ por passo + lembrete de reiniciar sessão se MCP novo
 ```
 
 ---
@@ -264,13 +257,13 @@ Passos 3/4.
   mesmo que o usuário a tenha colado no chat e peça para gravar direto. O agente só mostra as
   linhas exatas; quem edita o arquivo é sempre o usuário, mesmo se ele pedir para pular esse passo
 - Testar ou configurar conexão de **produção** sem validação humana explícita
-- Registrar Serena (`claude mcp add` / `codex mcp add` / editar `.cursor/mcp.json`) ou criar o vault de memória sem confirmação
+- Inventar slug de modelo que o host não listou, ou gravar `agents:` / criar o vault sem confirmação
 - Criar o vault sem perguntar ao dev o nome, os produtos e a política de PII
 - Migrar ou apagar memória legada dentro deste skill — isso é `memory-graph:memory-vault-setup`,
   que faz backup, valida e pergunta antes de apagar
 - Sobrescrever um `## Project Profile` existente (em `CLAUDE.md` ou `AGENTS.md`) sem mostrar o diff e confirmar
 - Instalar uma ferramenta de runtime ausente sem perguntar antes
-- Declarar o Passo 6 "tudo pronto" sem ter reportado reiniciar a sessão quando Serena ou
-  o vault de memória foi adicionado
-- Hardcodar aqui um nome de produto, sub-projeto, tabela ou conexão — tudo é `<placeholder>`
-  até o usuário confirmar
+- Declarar o Passo 6 "tudo pronto" sem ter reportado reiniciar a sessão quando o vault
+  de memória / MCP foi adicionado
+- Hardcodar aqui um nome de produto, sub-projeto, tabela, conexão ou **marca de LLM** —
+  tudo é `<placeholder>` até o usuário confirmar / o catálogo listar

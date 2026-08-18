@@ -55,6 +55,12 @@ ci_gotchas: |
   - <peculiaridade do lint/CI do projeto, se houver>
   - <o que o CI não roda e precisa ser reproduzido local>
   - <mapeamento branch → ambiente de deploy>
+agents:                                 # opcional; slugs vêm do catálogo do host, nunca da skill
+  <host>:                               # cursor | claude | codex
+    reasoning: { model: <id> }
+    code:      { model: <id> }
+    critique:  { model: <id> }
+    security:  { model: <id> }          # omitir → critique + security-review.md
 ```
 
 > O formato de referência é YAML; um projeto pode declarar o Profile em tabela Markdown
@@ -130,3 +136,6 @@ A skill de engenharia despachada é a do Profile (`expert-frontend-react` **ou**
   torna o registro de memória obrigatório ao fim da tarefa.
 - **Bloco `database`** (se houver banco) — nomes de conexão, dialeto, comandos de discovery,
   tabela de tracking de migration. Ver `expert-database` para o fluxo que consome esse bloco.
+- **Bloco `agents`** (opcional) — mapa `reasoning` / `code` / `critique` / `security` →
+  id do catálogo **daquele host**. Sem o bloco, o `workflow-dev` escolhe pelo catálogo e
+  avisa. Ver `agent-roles.md`. Nenhum slug de marca vive na skill.

@@ -1,9 +1,10 @@
 # Lanes (S/M/L) e o Delegation Mandate
 
 O `workflow-dev` mantém o esqueleto de fases — discover → brainstorm → spec+plan → env →
-impl → review → lint/tests → PR, com worktrees e pipeline de review — mas **zero
-paths/comandos hardcoded**: tudo resolvido via `project-profile.md`. Este documento cobre o
-sizing por lane e a regra dura que governa quem executa cada tipo de ação.
+impl → review de correção → review de segurança → lint/tests → PR, com worktrees e
+pipeline de review — mas **zero paths/comandos/slugs de modelo hardcoded**: tudo resolvido
+via `project-profile.md` e `agent-roles.md`. Este documento cobre o sizing por lane e a
+regra dura que governa quem executa cada tipo de ação.
 
 ## Fase 0 — Resolver Project Profile
 
@@ -44,7 +45,8 @@ subagente.**
 | Análise/investigação de código, mapeamento, blast radius | **subagente** (handoff rico + ReAct) |
 | Implementação de qualquer task (inclusive lane S) | **subagente** dev |
 | Ajustes pós-review (aplicar CHANGES-REQUESTED) | **subagente** dev |
-| Code review de todo diff | **subagente** reviewer |
+| Code review de correção de todo diff | **subagente** `review` (`critique`) |
+| Review de segurança de todo diff de código | **subagente** `security` |
 | **Edição trivial ≤ 100 caracteres** (typo, bump de versão, uma linha de config) | orquestrador pode fazer direto |
 | Coordenação: ler Project Profile, classificar lane, colar contexto, despachar, coletar síntese | orquestrador |
 | Rodar comandos de verificação/git (test/lint/build, commit, push, abertura de PR) | orquestrador (executa o comando; **a análise de falha e o fix vão para subagente**) |
@@ -65,7 +67,8 @@ Poucos arquivos, sem cruzar sub-projeto, sem decisão de arquitetura em aberto. 
   dev**, recebendo o handoff rico do diagnóstico que o orquestrador já levantou (o
   orquestrador pode ter feito a investigação inicial via subagente de análise, ou já ter
   contexto suficiente do Project Profile — mas quem escreve o código é o subagente dev).
-- O review continua **obrigatório** antes do commit, mesmo em lane S.
+- O review de correção **e** o de segurança continuam **obrigatórios** antes do commit,
+  mesmo em lane S (security só pula em diff 100% não-runtime; ver `security-review.md`).
 - Spec/plan podem ser abreviados (modo rápido da skill de planejamento do projeto), mas os
   critérios de sucesso (`success-criteria.md`) continuam obrigatórios.
 
@@ -83,12 +86,11 @@ não só no final.
 
 ## Loop de ajuste pós-review
 
-Quando o subagente reviewer devolve `CHANGES-REQUESTED`:
+Quando o `review` devolve `CHANGES-REQUESTED` **ou** o `security` devolve `ISSUES-FOUND`:
 
-1. **Novo subagente dev** aplica os ajustes, recebendo como Estado Atual o diff em questão
-   mais os pontos levantados pelo review (handoff rico, não um resumo verbal).
-2. Novo ciclo de review sobre o diff ajustado.
-3. Só após aprovação o commit acontece.
+1. **Novo subagente `impl`** aplica os ajustes, recebendo o diff + os pontos (handoff rico).
+2. Novo ciclo de **correção e segurança** sobre o diff ajustado.
+3. Só após `APPROVE` **e** `SECURE` o commit acontece.
 
 O orquestrador **nunca** aplica o fix pós-review ele mesmo — mesmo que o ajuste pareça
 trivial, a menos que caia dentro da exceção de ≤ 100 caracteres.
