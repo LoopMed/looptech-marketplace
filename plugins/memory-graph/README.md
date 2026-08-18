@@ -155,8 +155,11 @@ The plugin is the same folder. Each host reads its own manifest:
 | Codex | `.codex-plugin/plugin.json` | `.mcp.json` → `./scripts/serve.sh` |
 | Cursor | `.cursor-plugin/plugin.json` | `mcp.json` → `./scripts/serve.sh` |
 
-`scripts/serve.sh` starts `uv run --directory <plugin> python -m memory_graph serve`
-from the plugin root, so it does not depend on `CLAUDE_PLUGIN_ROOT`. The vault
+MCP launch is `bash -c` + `uv run --directory <plugin-root>` (not `./scripts/serve.sh`).
+Cursor resolves relative commands against the **workspace**, so a `./scripts/...`
+path becomes `<seu-projeto>/scripts/serve.sh` and fails with ENOENT. The launcher
+uses `PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT` when the host sets them, otherwise the
+plugin cache. The vault
 directory is auto-detected; set `MEMORY_GRAPH_DIR` / `MEMORY_GRAPH_DB` only to
 override. On Cursor those names are optional plugin variables (Customize →
 Configure). Reinicie a sessão depois de instalar para o MCP aparecer.
