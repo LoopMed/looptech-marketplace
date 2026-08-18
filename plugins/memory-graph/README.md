@@ -48,18 +48,26 @@ conversa com o app rodando. Ver https://help.obsidian.md/cli
   again — no `reindex` step in between required. `reindex`/`memory_reindex`
   still exist for an explicit/manual refresh, but nothing depends on you
   remembering to run them.
-- **Auto-detected vault.** When `MEMORY_GRAPH_DIR` isn't set, the directory is
-  the project's **Obsidian vault** — any directory containing `.obsidian/`,
-  either the project root or an immediate subdirectory (the usual layout is
-  `<project>/<Name>Memory/`). Dependency and hidden directories are skipped;
-  when more than one vault exists the `*memory*`-named one wins, so the result
-  is deterministic rather than filesystem-order dependent.
-  Resolution order: explicit flag -> `$MEMORY_GRAPH_DIR` -> **vault** ->
-  legacy `~/.claude/projects/<slug>/memory` (kept so installs predating the
-  vault layout keep working — run `memory-graph:memory-vault-setup` to
-  migrate). If nothing resolves, commands that require a directory (like
-  `reindex`) fail pointing at the setup skill; query commands degrade
-  gracefully and search whatever's already indexed.
+- **Auto-detected vault.** When `MEMORY_GRAPH_DIR` isn't set (or the host
+  left the literal `${MEMORY_GRAPH_DIR}` placeholder), the directory is
+  resolved in one place (`memory_graph/config.py`):
+  1. Explicit flag / tool `directory` — must exist.
+  2. `$MEMORY_GRAPH_DIR` — empty strings and unexpanded `${…}` placeholders
+     are ignored so auto-detect still runs. A real path that is missing
+     raises.
+  3. Walk ancestors from the project dir up to `$HOME` (inclusive, never
+     above HOME). At each level: (a) `memory.path` in `CLAUDE.md` or
+     `AGENTS.md`, resolved relative to **that file's directory**; an
+     existing dir is enough. (b) the level itself or an immediate child
+     containing `.obsidian/` (dependency and hidden dirs skipped; a
+     `*memory*`-named vault wins when several exist). First hit wins.
+  4. Legacy `~/.claude/projects/<slug>/memory` **only if it contains at
+     least one `.md`**. An empty harness directory does not count.
+  5. If nothing resolves, commands that require a directory (like
+     `reindex`) fail pointing at the setup skill; query commands degrade
+     gracefully and search whatever's already indexed.
+  Run `memory-graph:memory-vault-setup` to create a vault or migrate a
+  pre-vault install.
 - **Auto-detected index location.** Likewise, when `MEMORY_GRAPH_DB` isn't
   set, the SQLite index lives at a stable, project-scoped path *outside*
   the memory directory: `~/.looptech/memory-graph/<slug>/index.db`. If an

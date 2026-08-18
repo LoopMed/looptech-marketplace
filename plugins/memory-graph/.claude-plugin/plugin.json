@@ -1,15 +1,11 @@
 {
   "name": "memory-graph",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Memória de projeto num vault Obsidian — escrita pelo obsidian CLI, recall semântico + travessia de [[links]] 100% on-device (fastembed + sqlite-vec), zero nuvem. Traz as skills memory-vault (protocolo diário) e memory-vault-setup (criação do vault + migração da memória legada).",
   "mcpServers": {
     "memory-graph": {
       "command": "uv",
-      "args": ["run", "--directory", "${CLAUDE_PLUGIN_ROOT}", "python", "-m", "memory_graph", "serve"],
-      "env": {
-        "MEMORY_GRAPH_DIR": "${MEMORY_GRAPH_DIR}",
-        "MEMORY_GRAPH_DB": "${MEMORY_GRAPH_DB}"
-      }
+      "args": ["run", "--directory", "${CLAUDE_PLUGIN_ROOT}", "python", "-m", "memory_graph", "serve"]
     }
   }
 }

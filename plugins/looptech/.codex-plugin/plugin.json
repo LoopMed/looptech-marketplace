@@ -1,6 +1,6 @@
 {
   "name": "looptech",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Agnostic dev workflow orchestrator + named expert agents (go/python/react/vue/pwa/web/database/security) + guided init.",
   "author": {
     "name": "LoopTech",

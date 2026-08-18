@@ -82,7 +82,23 @@ def test_resolve_memory_dir_vault_wins_over_legacy_slug_dir(tmp_path, monkeypatc
 
 
 def test_resolve_memory_dir_falls_back_to_legacy_slug_dir(tmp_path, monkeypatch):
-    """No vault yet (pre-migration install): the legacy layout still resolves."""
+    """No vault yet (pre-migration install): a legacy dir with notes still resolves."""
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    project = _project(tmp_path)
+    legacy = fake_home / ".claude" / "projects" / str(project).replace("/", "-") / "memory"
+    legacy.mkdir(parents=True)
+    (legacy / "note.md").write_text("# leftover\n")
+
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.delenv("MEMORY_GRAPH_DIR", raising=False)
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project))
+
+    assert resolve_memory_dir() == str(legacy)
+
+
+def test_resolve_memory_dir_ignores_empty_legacy_dir(tmp_path, monkeypatch):
+    """Empty harness leftover at ~/.claude/projects/<slug>/memory is not a vault."""
     fake_home = tmp_path / "home"
     fake_home.mkdir()
     project = _project(tmp_path)
@@ -93,7 +109,59 @@ def test_resolve_memory_dir_falls_back_to_legacy_slug_dir(tmp_path, monkeypatch)
     monkeypatch.delenv("MEMORY_GRAPH_DIR", raising=False)
     monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project))
 
-    assert resolve_memory_dir() == str(legacy)
+    assert resolve_memory_dir(required=False) is None
+
+
+def test_resolve_memory_dir_ignores_unexpanded_placeholder(tmp_path, monkeypatch):
+    """Hosts that inject the literal ${MEMORY_GRAPH_DIR} must fall through to auto-detect."""
+    project = _project(tmp_path)
+    vault = _vault(project)
+
+    monkeypatch.setenv("MEMORY_GRAPH_DIR", "${MEMORY_GRAPH_DIR}")
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project))
+
+    assert resolve_memory_dir() == str(vault)
+
+
+def test_resolve_memory_dir_walks_ancestors_to_find_vault(tmp_path, monkeypatch):
+    """cwd like <holding>/IT/App: vault lives two levels up as a sibling of IT."""
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    holding = fake_home / "holding"
+    project = holding / "IT" / "App"
+    project.mkdir(parents=True)
+    vault = _vault(holding, "CompanyMemory")
+
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.delenv("MEMORY_GRAPH_DIR", raising=False)
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project))
+
+    assert resolve_memory_dir() == str(vault)
+
+
+def test_resolve_memory_dir_reads_memory_path_from_claude_md(tmp_path, monkeypatch):
+    """memory.path is resolved relative to the file, not the process cwd."""
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    holding = fake_home / "holding"
+    project = holding / "IT" / "App"
+    project.mkdir(parents=True)
+    declared = holding / "TeamVault"
+    declared.mkdir()
+    (project / "CLAUDE.md").write_text(
+        "```yaml\n"
+        "memory:\n"
+        "  vault: TeamVault\n"
+        "  path: ../../TeamVault   # relativo ao arquivo que declara\n"
+        "  pii: permitida\n"
+        "```\n"
+    )
+
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.delenv("MEMORY_GRAPH_DIR", raising=False)
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(project))
+
+    assert Path(resolve_memory_dir()).resolve() == declared.resolve()
 
 
 def test_resolve_memory_dir_prefers_explicit_env_over_autodetect(tmp_path, monkeypatch):
