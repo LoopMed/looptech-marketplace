@@ -1,6 +1,6 @@
 {
   "name": "memory-graph",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Memória de projeto num vault Obsidian — escrita pelo obsidian CLI, recall semântico + travessia de [[links]] 100% on-device (fastembed + sqlite-vec), zero nuvem. Traz as skills memory-vault (protocolo diário) e memory-vault-setup (criação do vault + migração da memória legada).",
   "author": {
     "name": "LoopTech",

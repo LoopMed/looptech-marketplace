@@ -44,4 +44,35 @@ ROOT="$(plugin_root)" || {
   exit 1
 }
 
+# Drop unexpanded ${PLACEHOLDER} that Cursor/Codex inject when optional vars are unset.
+# bash 3.2 (macOS): no nameref; case + ${var-} stays safe under `set -u`.
+_strip_placeholder() {
+  local n="$1"
+  local v=""
+  case "$n" in
+    MEMORY_GRAPH_DIR) v="${MEMORY_GRAPH_DIR-}" ;;
+    MEMORY_GRAPH_DB) v="${MEMORY_GRAPH_DB-}" ;;
+    CURSOR_PROJECT_DIR) v="${CURSOR_PROJECT_DIR-}" ;;
+    CLAUDE_PROJECT_DIR) v="${CLAUDE_PROJECT_DIR-}" ;;
+    *) return 0 ;;
+  esac
+  case "$v" in
+    \$\{*\}) unset "$n" ;;
+  esac
+}
+_strip_placeholder MEMORY_GRAPH_DIR
+_strip_placeholder MEMORY_GRAPH_DB
+_strip_placeholder CURSOR_PROJECT_DIR
+_strip_placeholder CLAUDE_PROJECT_DIR
+
+# Workspace = where the HOST started this process (Cursor/Codex: the project).
+# uv --directory will chdir into the plugin cache; preserve the original pwd.
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ] && [ -z "${CURSOR_PROJECT_DIR:-}" ]; then
+  workspace="$(pwd -P 2>/dev/null || pwd)"
+  case "$workspace" in
+    */.cursor/plugins/*|*/.claude/plugins/*) ;;
+    *) export CURSOR_PROJECT_DIR="$workspace" ;;
+  esac
+fi
+
 exec uv run --directory "$ROOT" python -m memory_graph serve

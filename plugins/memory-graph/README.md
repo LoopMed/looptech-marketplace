@@ -48,18 +48,26 @@ conversa com o app rodando. Ver https://help.obsidian.md/cli
   again — no `reindex` step in between required. `reindex`/`memory_reindex`
   still exist for an explicit/manual refresh, but nothing depends on you
   remembering to run them.
-- **Auto-detected vault.** When `MEMORY_GRAPH_DIR` isn't set, the directory is
-  the project's **Obsidian vault** — any directory containing `.obsidian/`,
-  either the project root or an immediate subdirectory (the usual layout is
-  `<project>/<Name>Memory/`). Dependency and hidden directories are skipped;
-  when more than one vault exists the `*memory*`-named one wins, so the result
-  is deterministic rather than filesystem-order dependent.
-  Resolution order: explicit flag -> `$MEMORY_GRAPH_DIR` -> **vault** ->
-  legacy `~/.claude/projects/<slug>/memory` (kept so installs predating the
-  vault layout keep working — run `memory-graph:memory-vault-setup` to
-  migrate). If nothing resolves, commands that require a directory (like
-  `reindex`) fail pointing at the setup skill; query commands degrade
-  gracefully and search whatever's already indexed.
+- **Auto-detected vault.** When `MEMORY_GRAPH_DIR` isn't set (or the host
+  left the literal `${MEMORY_GRAPH_DIR}` placeholder), the directory is
+  resolved in one place (`memory_graph/config.py`):
+  1. Explicit flag / tool `directory` — must exist.
+  2. `$MEMORY_GRAPH_DIR` — empty strings and unexpanded `${…}` placeholders
+     are ignored so auto-detect still runs. A real path that is missing
+     raises.
+  3. Walk ancestors from the project dir up to `$HOME` (inclusive, never
+     above HOME). At each level: (a) `memory.path` in `CLAUDE.md` or
+     `AGENTS.md`, resolved relative to **that file's directory**; an
+     existing dir is enough. (b) the level itself or an immediate child
+     containing `.obsidian/` (dependency and hidden dirs skipped; a
+     `*memory*`-named vault wins when several exist). First hit wins.
+  4. Legacy `~/.claude/projects/<slug>/memory` **only if it contains at
+     least one `.md`**. An empty harness directory does not count.
+  5. If nothing resolves, commands that require a directory (like
+     `reindex`) fail pointing at the setup skill; query commands degrade
+     gracefully and search whatever's already indexed.
+  Run `memory-graph:memory-vault-setup` to create a vault or migrate a
+  pre-vault install.
 - **Auto-detected index location.** Likewise, when `MEMORY_GRAPH_DB` isn't
   set, the SQLite index lives at a stable, project-scoped path *outside*
   the memory directory: `~/.looptech/memory-graph/<slug>/index.db`. If an
@@ -151,18 +159,23 @@ The plugin is the same folder. Each host reads its own manifest:
 
 | Host | Manifest | MCP config |
 |---|---|---|
-| Claude Code | `.claude-plugin/plugin.json` | inline `mcpServers` (kept for existing installs) |
-| Codex | `.codex-plugin/plugin.json` | `.mcp.json` → `./scripts/serve.sh` |
-| Cursor | `.cursor-plugin/plugin.json` | `mcp.json` → `./scripts/serve.sh` |
+| Claude Code | `.claude-plugin/plugin.json` | same `bash -c` → `scripts/serve.sh` |
+| Codex | `.codex-plugin/plugin.json` | `.mcp.json` → find root → `scripts/serve.sh` |
+| Cursor | `.cursor-plugin/plugin.json` | `mcp.json` → find root → `scripts/serve.sh` |
 
-MCP launch is `bash -c` + `uv run --directory <plugin-root>` (not `./scripts/serve.sh`).
-Cursor resolves relative commands against the **workspace**, so a `./scripts/...`
-path becomes `<seu-projeto>/scripts/serve.sh` and fails with ENOENT. The launcher
-uses `PLUGIN_ROOT` / `CLAUDE_PLUGIN_ROOT` when the host sets them, otherwise the
-plugin cache. The vault
-directory is auto-detected; set `MEMORY_GRAPH_DIR` / `MEMORY_GRAPH_DB` only to
-override. On Cursor those names are optional plugin variables (Customize →
-Configure). Reinicie a sessão depois de instalar para o MCP aparecer.
+MCP launch is `bash -c` that finds the plugin root, then `exec bash "$root/scripts/serve.sh"`
+(not `command: ./scripts/serve.sh`). Cursor resolves relative commands against the
+**workspace**, so a `./scripts/...` path becomes `<seu-projeto>/scripts/serve.sh`
+and fails with ENOENT.
+
+Claude usually sets `CLAUDE_PROJECT_DIR`; Cursor and Codex do not.
+`scripts/serve.sh` (shared by all three) captures the host workspace (`pwd`)
+and exports it as `CURSOR_PROJECT_DIR` *before* `uv run --directory` chdirs
+into the plugin cache. Unexpanded `${…}` placeholders (injected when optional
+plugin variables are empty) are unset. You do **not** need to fill
+`MEMORY_GRAPH_DIR` / `MEMORY_GRAPH_DB` in Cursor Customize → Configure —
+those stay as optional overrides. The vault is auto-detected from the
+preserved workspace. Reinicie a sessão depois de instalar para o MCP aparecer.
 
 ## Storage backend
 

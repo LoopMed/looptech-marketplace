@@ -1,7 +1,7 @@
 {
   "name": "looptech",
   "description": "Agnostic dev workflow orchestrator + named expert agents (go/python/react/vue/pwa/web/database/security) + guided init.",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "author": {
     "name": "LoopTech"
   },
@@ -24,5 +24,16 @@
     "security"
   ],
   "skills": "./skills/",
-  "agents": "./agents/"
+  "agents": [
+    "./agents/expert-backend-go.md",
+    "./agents/expert-backend-python.md",
+    "./agents/expert-database.md",
+    "./agents/expert-frontend-pwa.md",
+    "./agents/expert-frontend-react.md",
+    "./agents/expert-frontend-vue.md",
+    "./agents/expert-frontend-web.md",
+    "./agents/expert-security.md",
+    "./agents/plan.md",
+    "./agents/review.md"
+  ]
 }

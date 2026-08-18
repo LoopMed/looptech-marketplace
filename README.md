@@ -256,8 +256,8 @@ plugins/
     skills/
 ```
 
-Versões dos três manifests de cada plugin precisam andar juntas (`looptech` 0.6.0,
-`memory-graph` 0.3.0).
+Versões dos três manifests de cada plugin precisam andar juntas (`looptech` 0.6.1,
+`memory-graph` 0.3.2).
 
 ## Extensibilidade
 
