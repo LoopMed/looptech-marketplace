@@ -13,7 +13,7 @@ regra de migration por existência.
 **Postgres é o dialeto de referência** desta skill (a sintaxe dos exemplos é Postgres),
 mas os princípios são portáveis a qualquer banco relacional. Fatos concretos — nomes de
 conexão, dialeto real do projeto, comandos de discovery, nome da tabela de tracking de
-migration — vêm do bloco `database` do Project Profile (`CLAUDE.md` do projeto). Esta
+migration — vêm do bloco `database` do Project Profile (`CLAUDE.md` / `AGENTS.md`). Esta
 skill nunca hardcoda um nome de tabela, de conexão ou de produto.
 
 > **Regra de ouro:** não existe dicionário de schema estático confiável. Schema envelhece
@@ -231,7 +231,7 @@ falha ao testar): **PARE** e emita para a dev um passo a passo de onboarding —
 avance para discovery/execução com conexão vermelha.
 
 1. **Criar/registrar o profile de conexão** — o nome vem do bloco `database` do Project
-   Profile (`CLAUDE.md` do projeto).
+   Profile (`CLAUDE.md` / `AGENTS.md`).
 2. **Gravar credenciais no secret store do dialeto** (arquivo de credenciais/segredo
    local do cliente do dialeto em uso — nunca em código, nunca em config versionada).
 3. **Testar conectividade** com o comando de ping/conexão do dialeto.
@@ -410,6 +410,6 @@ tracking de version depois.
 
 Nomes concretos de conexão, dialeto real, comandos de discovery exatos, nome da tabela de
 tracking de migration, e o sinal concreto de "isto é produção" — tudo isso vem do bloco
-`database` do Project Profile (`CLAUDE.md` do projeto). Regras de segurança específicas de
+`database` do Project Profile (`CLAUDE.md` / `AGENTS.md`). Regras de segurança específicas de
 produto sobre dados financeiros/sensíveis (ex.: locks nomeados de domínio) também ficam no
-`CLAUDE.md` do projeto, não nesta skill.
+Project Profile do projeto, não nesta skill.

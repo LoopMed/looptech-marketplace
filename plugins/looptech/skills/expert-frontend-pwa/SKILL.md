@@ -1,6 +1,6 @@
 ---
 name: expert-frontend-pwa
-description: Disciplina de UI/UX/interação orientada a MOBILE-FIRST (agnóstica de produto; Design System e paleta concretos vêm do CLAUDE.md). Layout do menor breakpoint para cima, alvos de toque ≥44px, navegação por polegar, hover nunca como único caminho, densidade enxuta, performance percebida (skeletons, JS/imagem leves) e comportamento PWA/offline quando aplicável. Carregue (junto com a skill de engenharia da stack) ao tocar áreas de frontend marcadas como mobile-first no Project Profile (ux_default/ux_overrides). NÃO cobre arquitetura/TS/testes — isso é o eixo de engenharia (ex.: expert-frontend-react ou expert-frontend-vue).
+description: Disciplina de UI/UX/interação orientada a MOBILE-FIRST (agnóstica de produto; Design System e paleta concretos vêm do Project Profile). Layout do menor breakpoint para cima, alvos de toque ≥44px, navegação por polegar, hover nunca como único caminho, densidade enxuta, performance percebida (skeletons, JS/imagem leves) e comportamento PWA/offline quando aplicável. Carregue (junto com a skill de engenharia da stack) ao tocar áreas de frontend marcadas como mobile-first no Project Profile (ux_default/ux_overrides). NÃO cobre arquitetura/TS/testes — isso é o eixo de engenharia (ex.: expert-frontend-react ou expert-frontend-vue).
 ---
 
 # Expert Frontend PWA — UX Mobile-First
@@ -16,7 +16,7 @@ skill de engenharia da stack (ex.: `expert-frontend-react` / `expert-frontend-vu
   disciplina de engenharia — isso é responsabilidade da skill de engenharia da stack, que
   deve ser carregada junto.
 - **NÃO define** paleta, tokens de Design System, nomes de componentes ou paths concretos —
-  esses fatos vêm sempre do `CLAUDE.md` do projeto.
+  esses fatos vêm sempre do Project Profile (`CLAUDE.md` / `AGENTS.md`) do projeto.
 
 Carregue esta skill quando o `workflow-dev` resolver, via Project Profile
 (`ux_default`/`ux_overrides`), que a área de frontend tocada é mobile-first — tipicamente o
@@ -85,7 +85,7 @@ app principal voltado ao usuário final em um dispositivo móvel.
 
 - Arquitetura de componentes, tipagem, testes e build: cobertos pela skill de engenharia da
   stack (ex.: `expert-frontend-react` / `expert-frontend-vue`), carregada em conjunto.
-- Design System, paleta, tokens, nomes de componentes concretos: vêm do `CLAUDE.md` do
+- Design System, paleta, tokens, nomes de componentes concretos: vêm do Project Profile do
   projeto.
 - Qual área do frontend é mobile-first vs. web-first: resolvido pelo `workflow-dev` via
   `ux_default`/`ux_overrides` no Project Profile — esta skill não decide isso, só aplica a

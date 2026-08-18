@@ -1,6 +1,6 @@
 ---
 name: workflow-dev
-description: Use ao iniciar QUALQUER tarefa de desenvolvimento (feature, bugfix, hotfix, refactor) em um projeto que declara um Project Profile no CLAUDE.md. Orquestra o ciclo completo — discover → spec+plan → env → implementar → review → lint/tests → PR — dimensionado por lane (S/M/L), delegando toda análise/código a subagentes com handoff rico e loop de autonomia. Detecta a stack de cada sub-projeto e despacha as skills expert corretas (expert-backend-go, expert-backend-python, expert-frontend-react, expert-frontend-vue, expert-frontend-pwa, expert-frontend-web, expert-database). NÃO use para projetos sem Project Profile.
+description: Use ao iniciar QUALQUER tarefa de desenvolvimento (feature, bugfix, hotfix, refactor) em um projeto que declara um Project Profile no CLAUDE.md ou AGENTS.md. Orquestra o ciclo completo — discover → spec+plan → env → implementar → review → lint/tests → PR — dimensionado por lane (S/M/L), delegando toda análise/código a subagentes com handoff rico e loop de autonomia. Detecta a stack de cada sub-projeto e despacha as skills expert corretas (expert-backend-go, expert-backend-python, expert-frontend-react, expert-frontend-vue, expert-frontend-pwa, expert-frontend-web, expert-database). Funciona em Claude Code, Codex e Cursor. NÃO use para projetos sem Project Profile.
 ---
 
 # Workflow Dev — Orquestrador Agnóstico de Desenvolvimento
@@ -8,14 +8,16 @@ description: Use ao iniciar QUALQUER tarefa de desenvolvimento (feature, bugfix,
 ## Overview
 
 Ciclo completo de desenvolvimento para qualquer projeto que declare um **Project Profile**
-no seu `CLAUDE.md`: **discover → brainstorm → spec+plan → preparar ambiente → implementar →
-review → lint+tests → PR**. O processo é o mesmo para qualquer stack; o que muda — paths,
-comandos, branches, conexões de banco — vem **inteiramente** do Profile do projeto. Esta
-skill carrega **processo e disciplina**, nunca fatos concretos de um produto específico.
+no `CLAUDE.md` e/ou `AGENTS.md`: **discover → brainstorm → spec+plan → preparar ambiente →
+implementar → review → lint+tests → PR**. O processo é o mesmo para qualquer stack; o que
+muda — paths, comandos, branches, conexões de banco — vem **inteiramente** do Profile do
+projeto. Esta skill carrega **processo e disciplina**, nunca fatos concretos de um produto
+específico. Roda em **Claude Code, Codex e Cursor** — o mapeamento de tools está em
+[`references/host-compat.md`](references/host-compat.md).
 
 **Announce at start:** "Estou usando a skill workflow-dev para guiar esta tarefa."
 
-**Escopo:** aplica-se **somente** a sub-projetos mapeados no Project Profile do `CLAUDE.md`.
+**Escopo:** aplica-se **somente** a sub-projetos mapeados no Project Profile.
 Se a tarefa mira um diretório fora do Profile, ou o projeto não declara Profile algum, **pare**
 e diga ao usuário que esta skill não cobre o caso — o sub-projeto segue seu próprio processo
 ad hoc (documentação local, se houver).
@@ -33,11 +35,13 @@ ad hoc (documentação local, se houver).
 
 ## Fase 0 — Resolver o Project Profile · main
 
-**Primeira ação, sempre.** Leia o `CLAUDE.md` do projeto (e do sub-projeto, se houver um
-próprio) e monte o mapa `path → stack → comandos → convenções` antes de tocar em qualquer
-código. O contrato completo do Project Profile — o que ele precisa declarar, o formato de
-referência, a resolução de UX por área e a inferência de stack por manifesto quando um path
-não está mapeado — está em [`references/project-profile.md`](references/project-profile.md).
+**Primeira ação, sempre.** Detecte o host e leia o Project Profile em `CLAUDE.md` **e**
+`AGENTS.md` (raiz e sub-projeto, se houver um próprio) — ver
+[`references/host-compat.md`](references/host-compat.md). Monte o mapa
+`path → stack → comandos → convenções` antes de tocar em qualquer código. O contrato
+completo do Project Profile — o que ele precisa declarar, o formato de referência, a
+resolução de UX por área e a inferência de stack por manifesto quando um path não está
+mapeado — está em [`references/project-profile.md`](references/project-profile.md).
 
 - **Path ausente no Profile:** infira a stack pelo manifesto do diretório (arquivo de
   dependências/build da linguagem, framework declarado no manifesto de pacote, etc.) e
@@ -47,7 +51,7 @@ não está mapeado — está em [`references/project-profile.md`](references/pro
   precisa declarar um Project Profile antes de usar este workflow.
 - Todo comando de teste/lint/build/integração citado em qualquer fase adiante **vem do
   Profile** — nunca hardcode um comando aqui.
-- **Resolva também o destino de spec/memória**: o `CLAUDE.md` declara um bloco `memory:`?
+- **Resolva também o destino de spec/memória**: o Profile declara um bloco `memory:`?
   Se sim, o projeto tem gestor de memória — spec/plano vão para o vault e a memória da tarefa
   é obrigatória (carregue `memory-graph:memory-vault`). Se não, vale o `specs_dir` do Profile
   ou o fallback `.specs/`. Ver a **Regra de Destino** na Fase 3.
@@ -91,20 +95,20 @@ cada lane pula ou exige, e a regra de "quando em dúvida, promova" estão em
 ## Model Assignment
 
 O orquestrador (este agente principal) roda sempre no **modelo default da sessão** — não
-troca de modelo no meio da tarefa. Subagentes recebem um `model` explícito:
+troca de modelo no meio da tarefa. Subagentes recebem o **maior raciocínio que o host
+permitir no filho** (ver `host-compat.md`):
 
 | Trabalho | Roda em | Modelo | Effort |
 |----------|---------|--------|--------|
 | Discover, brainstorm, preparação de ambiente, lint+tests, abertura de PR, coordenação | **agente principal** | default da sessão | default da sessão |
-| Spec+Plan (combinado, lanes M/L) | **subagente** | modelo de maior raciocínio disponível (ex.: opus) | `xhigh` |
-| Implementação de código por task (toda lane, inclusive S) | **subagente(s)** | modelo intermediário (ex.: sonnet) | `xhigh` |
-| Code review (toda lane) | **subagente** | modelo intermediário (ex.: sonnet) | `xhigh` |
+| Spec+Plan (combinado, lanes M/L) | **subagente** | modelo de maior raciocínio disponível | máximo do host |
+| Implementação de código por task (toda lane, inclusive S) | **subagente(s)** | modelo intermediário capaz | máximo do host |
+| Code review (toda lane) | **subagente** | modelo intermediário capaz | máximo do host |
 
-**Effort (reasoning):** todo subagente é despachado com reasoning effort **`xhigh`** —
-independentemente do tier de modelo (Spec+Plan, dev, review, e qualquer subagente de
-investigação/ajuste). O **orquestrador (agente principal)** permanece no effort/modelo
-default da sessão; só os subagentes recebem `xhigh` explicitamente. Ao chamar um
-subagente, sempre passe `effort: xhigh` além do `model`.
+**Effort (reasoning):** todo subagente é despachado no **máximo** de reasoning/thinking
+do host (Claude Code: `effort: xhigh`; Codex/Cursor: o equivalente nativo — se o host
+não deixar effort por filho, herde o do pai e **ainda assim spawn**). O **orquestrador**
+permanece no effort/modelo default da sessão.
 
 ---
 
@@ -117,10 +121,10 @@ que o orquestrador já sabia é desperdício puro — e é o que faz o subagente
   [`references/subagent-handoff.md`](references/subagent-handoff.md): Objetivo Final (com
   critério de sucesso binário), Estado Atual (referências exatas, coladas, não apontadas),
   Variáveis Críticas, e o conhecimento expert de arquitetura relevante aos arquivos tocados.
-- **Sempre defina `effort: xhigh`.** Todo despacho de subagente — Spec+Plan, dev, review, ou
-  qualquer subagente de investigação/ajuste — inclui `effort: xhigh` explicitamente, junto com
-  o `model` e o handoff rico (ver "Model Assignment" acima). O orquestrador nunca muda seu
-  próprio effort, só o do subagente que está despachando.
+- **Sempre peça o máximo de reasoning no filho.** Todo despacho de subagente — Spec+Plan,
+  dev, review, ou qualquer subagente de investigação/ajuste — inclui o effort/model nativo
+  do host (ver "Model Assignment" e `host-compat.md`) junto com o handoff rico. O
+  orquestrador nunca muda seu próprio effort, só o do subagente que está despachando.
 - **Reviewers recebem o diff inline.** Rode o diff no agente principal e cole a saída no
   prompt de review, junto com o "Done when" da task. O reviewer não deve precisar explorar.
 - **Subagentes de desenvolvimento e debug** embutem também o loop de autonomia descrito em
@@ -189,7 +193,7 @@ independentes marcadas para paralelismo. Grave conforme a **Regra de Destino** a
 
 Resolva **nesta ordem**, uma única vez por tarefa, e diga ao usuário qual caminho valeu:
 
-1. **O `CLAUDE.md` declara um bloco `memory:`** (gestor de memória instalado) → grave **no
+1. **O Profile declara um bloco `memory:`** (gestor de memória instalado) → grave **no
    vault**, em `<vault>/70-Specs/<feature>/`, **sempre pelo `obsidian` CLI**. Carregue
    `memory-graph:memory-vault` antes de escrever.
 2. **Sem bloco `memory:`, mas o Profile declara `specs_dir`** → use `specs_dir` como está.
@@ -320,14 +324,15 @@ declarar para aquele path (ou que a inferência por manifesto indicar, com aviso
   subagente — não escolha uma arbitrariamente.
 - Skills expert carregam **princípios e disciplina transferíveis** (nunca nomes concretos de
   função, tabela ou produto) — os fatos concretos de segurança/negócio do projeto continuam
-  no `CLAUDE.md` e devem ser colados no handoff junto com o conhecimento expert.
+  no Project Profile (`CLAUDE.md` / `AGENTS.md`) e devem ser colados no handoff junto com o
+  conhecimento expert.
 
 ---
 
 ## Quick Reference
 
 ```
-FASE 0: resolver Project Profile — path → stack → comandos → convenções (nunca hardcode)
+FASE 0: resolver Project Profile (CLAUDE.md + AGENTS.md) — path → stack → comandos → convenções
 LANE PRIMEIRO: S (poucos arquivos, escopo trivial) | M (feature clara) | L (multi-componente/ambíguo)
 MANDATO: orquestrador NUNCA implementa/analisa/ajusta código — só edição trivial ≤100 chars
 

@@ -9,8 +9,8 @@ Skill agnóstica de produto. Cobre **só engenharia**: arquitetura de SFCs/compo
 tipagem, testes e segurança em princípio. **UX, layout, densidade, mobile-first vs.
 web-first e qualquer decisão de interação vivem em `expert-frontend-pwa` /
 `expert-frontend-web`** — o `workflow-dev` despacha essa skill de UX **junto** com esta,
-resolvida por área via o Project Profile (`ux_default` / `ux_overrides`) do `CLAUDE.md`
-do projeto.
+resolvida por área via o Project Profile (`ux_default` / `ux_overrides`) do `CLAUDE.md` /
+`AGENTS.md` do projeto.
 
 Fatos concretos (comandos de teste/lint/build, Design System, UI kit, estrutura de pastas,
 gotchas de deploy) **não** vivem aqui — vêm do Project Profile e das skills/regras locais
@@ -77,7 +77,7 @@ carrega os fatos.
 ## Segurança em princípio
 
 Estas são regras de **engenharia transferíveis**; origens/domínios concretos e o arquivo
-de config de deploy vêm do `CLAUDE.md` / skills locais do projeto.
+de config de deploy vêm do Project Profile / skills locais do projeto.
 
 - **CSP declarada no config de deploy**. Ao adicionar script/iframe/origem externa nova,
   **atualizar a CSP na mesma PR** — nunca contornar com `unsafe-inline`/`unsafe-eval`.

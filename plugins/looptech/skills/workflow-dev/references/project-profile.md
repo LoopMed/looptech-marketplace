@@ -1,14 +1,15 @@
-# Project Profile — o Contrato que o `CLAUDE.md` Preenche
+# Project Profile — o Contrato que o `CLAUDE.md` / `AGENTS.md` Preenche
 
-`workflow-dev` lê este bloco no `CLAUDE.md` de cada projeto — é a fonte determinística de
-sub-projetos, stack, comandos, convenções de VCS e (se houver) banco de dados. Elimina o
-"adivinhar": o orquestrador nunca infere um comando ou um path por tentativa quando o
-Profile já os declara.
+`workflow-dev` lê este bloco no `CLAUDE.md` **e** no `AGENTS.md` de cada projeto — é a fonte
+determinística de sub-projetos, stack, comandos, convenções de VCS e (se houver) banco de
+dados. Elimina o "adivinhar": o orquestrador nunca infere um comando ou um path por tentativa
+quando o Profile já os declara. Claude Code lê `CLAUDE.md`; Codex e Cursor leem `AGENTS.md`.
+Grave o mesmo bloco nos dois (ver `host-compat.md`).
 
 ## Regra de ouro
 
-O plugin carrega **processo e disciplina transferível**; o `CLAUDE.md` do projeto carrega os
-**fatos concretos** — paths reais, comandos exatos que espelham o CI, nomes de conexão,
+O plugin carrega **processo e disciplina transferível**; o Project Profile do projeto carrega
+os **fatos concretos** — paths reais, comandos exatos que espelham o CI, nomes de conexão,
 convenções de branch. O Project Profile é o ponto único de tradução entre os dois.
 
 ## Formato de referência (YAML)
@@ -63,8 +64,8 @@ ci_gotchas: |
 
 ## Bloco `memory` — onde vivem memória, spec e plano
 
-Opcional, mas quando presente **manda mais que `specs_dir`**. Declarado no `CLAUDE.md` da raiz
-pela skill `memory-graph:memory-vault-setup`:
+Opcional, mas quando presente **manda mais que `specs_dir`**. Declarado no `CLAUDE.md` **e**
+no `AGENTS.md` da raiz pela skill `memory-graph:memory-vault-setup`:
 
 ```yaml
 memory:

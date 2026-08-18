@@ -1,6 +1,6 @@
 ---
 name: init
-description: Use quando o plugin looptech acabou de ser instalado num projeto e nada foi configurado ainda, ou quando o usuário pede explicitamente "/looptech:init", "configurar o looptech", "inicializar o looptech", "setup do looptech", "onboarding de projeto", "configurar banco/serena/memória do looptech". Guia o projeto do zero ao pronto: Project Profile no CLAUDE.md, conexão de banco, MCP de navegação de código (Serena, opcional), memória em vault Obsidian (recomendado) e validação de runtimes. NÃO use para tarefas de desenvolvimento do dia a dia (isso é looptech:workflow-dev) nem quando o Project Profile já existe e está completo — nesse caso não há nada a inicializar.
+description: Use quando o plugin looptech acabou de ser instalado num projeto e nada foi configurado ainda, ou quando o usuário pede explicitamente "/looptech:init", "$init", "/init", "configurar o looptech", "inicializar o looptech", "setup do looptech", "onboarding de projeto", "configurar banco/serena/memória do looptech". Guia o projeto do zero ao pronto: Project Profile no CLAUDE.md e AGENTS.md, conexão de banco, MCP de navegação de código (Serena, opcional), memória em vault Obsidian (recomendado) e validação de runtimes. Funciona em Claude Code, Codex e Cursor. NÃO use para tarefas de desenvolvimento do dia a dia (isso é looptech:workflow-dev) nem quando o Project Profile já existe e está completo — nesse caso não há nada a inicializar.
 ---
 
 # looptech:init — Setup Guiado do Projeto
@@ -29,13 +29,18 @@ ritmo: **DETECTA → REPORTA → OFERECE corrigir (com confirmação)**.
 
 ## Passo 1 — Project Profile
 
-O `looptech:workflow-dev` lê o **Project Profile** do `CLAUDE.md` do projeto para saber
-sub-projetos, stacks, comandos e convenções de branch. Sem ele, o workflow não roda.
+O `looptech:workflow-dev` lê o **Project Profile** do `CLAUDE.md` e/ou `AGENTS.md` do
+projeto para saber sub-projetos, stacks, comandos e convenções de branch. Sem ele, o
+workflow não roda. Detecte o host uma vez
+([`../workflow-dev/references/host-compat.md`](../workflow-dev/references/host-compat.md))
+e grave o Profile nos **dois** arquivos — Codex e Cursor não leem `CLAUDE.md`.
 
-**DETECTA:** leia `./CLAUDE.md`. Se já existir uma seção `## Project Profile`, valide sua
-estrutura (sub-projetos com `path`+`stack`, `vcs`, `specs_dir`, `commands` por stack) contra o
-que existe de fato no repositório — aponte divergências (path que não existe mais, stack que
-mudou, comando que não roda). Se não existir, o projeto precisa de um Profile novo.
+**DETECTA:** leia `./CLAUDE.md` e `./AGENTS.md`. Se já existir uma seção `## Project Profile`
+em qualquer um, valide sua estrutura (sub-projetos com `path`+`stack`, `vcs`, `specs_dir`,
+`commands` por stack) contra o que existe de fato no repositório — aponte divergências (path
+que não existe mais, stack que mudou, comando que não roda). Se os dois tiverem o bloco e
+eles divergirem, **pare e pergunte** qual é o autoritativo. Se não existir em nenhum, o
+projeto precisa de um Profile novo.
 
 **REPORTA:** liste os sub-projetos que você detectou por manifesto (ex.: `go.mod` → Go,
 `pyproject.toml`/`requirements.txt` → Python, `package.json` com `react` na dependência →
@@ -45,9 +50,9 @@ tendem a web-first, o resto tende a mobile-first — e proponha `ux_default` + `
 por glob.
 
 **OFERECE:** monte o bloco YAML abaixo com o usuário, confirmando cada campo antes de escrever
-no `CLAUDE.md` — em especial os comandos de `test`/`lint`/`build`, que devem **espelhar
-exatamente o que o CI do projeto roda** (não um comando genérico da stack) e a branch
-base/target de PR:
+no `CLAUDE.md` **e** no `AGENTS.md` (crie o que faltar) — em especial os comandos de
+`test`/`lint`/`build`, que devem **espelhar exatamente o que o CI do projeto roda** (não um
+comando genérico da stack) e a branch base/target de PR:
 
 ```yaml
 ## Project Profile (looptech:workflow-dev)
@@ -70,8 +75,8 @@ memory: { vault: <NomeDoVault>, path: <pasta>/, produtos: [<Produto>], specs_dir
 Os blocos `database:` e `memory:` só são preenchidos de fato nos Passos 2 e 4 — deixe o
 placeholder aqui e retorne para completá-los depois. Se o usuário recusar o vault no Passo 4,
 **remova** o bloco `memory:` em vez de deixá-lo com placeholder: um `memory:` pela metade faz
-o `workflow-dev` mirar um vault que não existe. Só grave no `CLAUDE.md` após confirmação
-explícita do usuário sobre o conteúdo final.
+o `workflow-dev` mirar um vault que não existe. Só grave no `CLAUDE.md` e no `AGENTS.md`
+após confirmação explícita do usuário sobre o conteúdo final.
 
 ---
 
@@ -130,11 +135,14 @@ múltipla (ex.: "todos", "só backend", "backend + frontend", …).
 
 **OFERECE (com confirmação):** registre **um único** MCP server em modo **multi-projeto** (sem
 `--project`, para expor o `activate_project` e permitir navegar todos os escolhidos), **fixado
-numa release estável** e com o **dashboard web desligado**:
+numa release estável** e com o **dashboard web desligado**. Use o comando/arquivo do **host
+atual** — os três argv são iguais, só muda o registrador (ver `host-compat.md`):
 
-```
-claude mcp add serena -- uvx --from git+https://github.com/oraios/serena@<tag-estável> serena start-mcp-server --context ide-assistant --enable-web-dashboard false
-```
+| Host | Como registrar |
+|---|---|
+| Claude Code | `claude mcp add serena -- uvx --from git+https://github.com/oraios/serena@<tag-estável> serena start-mcp-server --context ide-assistant --enable-web-dashboard false` |
+| Codex | `codex mcp add serena --` com o mesmo argv `uvx …`, ou o bloco `[mcp_servers.serena]` em `~/.codex/config.toml` |
+| Cursor | entrada `serena` em `.cursor/mcp.json` (mesmo `command`/`args`) |
 
 - **`@<tag-estável>`**: use a **release mais recente** (veja `github.com/oraios/serena/releases`),
   **nunca o git HEAD** — o HEAD pode vir com bugs de CLI/schema.
@@ -146,7 +154,7 @@ claude mcp add serena -- uvx --from git+https://github.com/oraios/serena@<tag-es
 
 Avise que:
 - O **LSP da stack** é baixado sob demanda na primeira navegação — pode demorar na 1ª vez.
-- Os tools novos (e o dashboard desligado) só valem **depois de reiniciar a sessão** do Claude Code.
+- Os tools novos (e o dashboard desligado) só valem **depois de reiniciar a sessão** do host.
 
 ---
 
@@ -164,8 +172,8 @@ obsidian vaults                # app aberto? lista os vaults registrados
 uv --version                   # pré-requisito do MCP (mesmo do Passo 3)
 ```
 
-E confirme no `CLAUDE.md` se já existe um bloco `memory:`, e no repositório se já existe uma
-pasta com `.obsidian/`.
+E confirme no `CLAUDE.md` **e** no `AGENTS.md` se já existe um bloco `memory:`, e no
+repositório se já existe uma pasta com `.obsidian/`.
 
 **REPORTA** — cada sintoma tem causa diferente:
 
@@ -179,17 +187,16 @@ pasta com `.obsidian/`.
 Avise também que o **primeiro** uso do MCP baixa um modelo local (fastembed, ~130MB), uma
 única vez.
 
-**OFERECE**, com confirmação — delegue à skill dedicada, que faz o trabalho completo:
-
-```
-Skill("memory-graph:memory-vault-setup")
-```
+**OFERECE**, com confirmação — leia e execute a skill `memory-graph:memory-vault-setup`
+(Claude: `Skill("memory-graph:memory-vault-setup")`; Codex: `$memory-vault-setup`; Cursor:
+`/memory-vault-setup`). Não reimplemente o setup aqui.
 
 Ela cobre, em ordem: validar CLI e skills → criar o vault **junto com o dev** (nome, produtos,
 política de PII) → estrutura de pastas e templates → gravar o bloco `memory:` no `CLAUDE.md` e
-o protocolo em **todo** `CLAUDE.md` **e `AGENTS.md`** (outros agentes leem só o `AGENTS.md`) →
-varrer memória legada no repositório → perguntar o que migrar → migrar com backup, validação e
-verificação de paridade → perguntar apagar ou manter → consertar referências mortas.
+o protocolo em **todo** `CLAUDE.md` **e `AGENTS.md`** (Codex/Cursor/Gemini leem só o
+`AGENTS.md`) → varrer memória legada no repositório → perguntar o que migrar → migrar com
+backup, validação e verificação de paridade → perguntar apagar ou manter → consertar
+referências mortas.
 
 Se o usuário recusar o vault, siga sem ele: o `workflow-dev` cai no fallback `.specs/` e o
 projeto simplesmente não terá memória entre sessões. Diga isso explicitamente, não deixe
@@ -221,14 +228,14 @@ plataforma do usuário — não instale nada sem confirmação.
 Encerre com um resumo binário por passo, nunca vago:
 
 ```
-✅ Project Profile — gravado no CLAUDE.md (N sub-projetos)
+✅ Project Profile — gravado no CLAUDE.md e AGENTS.md (N sub-projetos)
 ✅ Banco — stage conectado, prod pendente de validação humana
 ⚠️ Serena — não configurado (usuário recusou)
 ✅ Memória — vault <Nome> criado, protocolo em N CLAUDE.md e M AGENTS.md, legado migrado
 ⚠️ Runtimes — falta gopls (instale com: <comando>)
 
 Próximos passos:
-- Reinicie a sessão do Claude Code para os MCP servers novos (Serena/memory-graph) aparecerem.
+- Reinicie esta sessão do agente para os MCP servers novos (Serena/memory-graph) aparecerem.
 - <qualquer pendência levantada acima>
 ```
 
@@ -240,9 +247,9 @@ Passos 3/4.
 ## Quick Reference
 
 ```
-1. Project Profile   → ler CLAUDE.md → detectar sub-projetos/stack/UX → confirmar comandos (=CI) → gravar
+1. Project Profile   → ler CLAUDE.md + AGENTS.md → detectar sub-projetos/stack/UX → confirmar comandos (=CI) → gravar nos dois
 2. Banco             → onboarding do expert-database → linhas exatas do secret store → testar stage → gravar database: no Profile
-3. Serena (opcional) → checar uv → claude mcp add serena ... --project "<dir>" → LSP sob demanda → reiniciar sessão
+3. Serena (opcional) → checar uv → registrar MCP no host (claude mcp add / codex mcp add / .cursor/mcp.json) → reiniciar sessão
 4. Memória (vault)   → which obsidian + obsidian vaults + uv → delegar a memory-graph:memory-vault-setup
                        (cria vault COM o dev, grava memory: + protocolo em CLAUDE.md E AGENTS.md, migra legado) → reiniciar sessão
 5. Runtimes          → validar ferramenta de cada stack do Profile → apontar instalação do que falta
@@ -257,11 +264,11 @@ Passos 3/4.
   mesmo que o usuário a tenha colado no chat e peça para gravar direto. O agente só mostra as
   linhas exatas; quem edita o arquivo é sempre o usuário, mesmo se ele pedir para pular esse passo
 - Testar ou configurar conexão de **produção** sem validação humana explícita
-- Rodar o comando `claude mcp add serena ...` ou criar o vault de memória sem confirmação
+- Registrar Serena (`claude mcp add` / `codex mcp add` / editar `.cursor/mcp.json`) ou criar o vault de memória sem confirmação
 - Criar o vault sem perguntar ao dev o nome, os produtos e a política de PII
 - Migrar ou apagar memória legada dentro deste skill — isso é `memory-graph:memory-vault-setup`,
   que faz backup, valida e pergunta antes de apagar
-- Sobrescrever um `## Project Profile` existente sem mostrar o diff e confirmar
+- Sobrescrever um `## Project Profile` existente (em `CLAUDE.md` ou `AGENTS.md`) sem mostrar o diff e confirmar
 - Instalar uma ferramenta de runtime ausente sem perguntar antes
 - Declarar o Passo 6 "tudo pronto" sem ter reportado reiniciar a sessão quando Serena ou
   o vault de memória foi adicionado

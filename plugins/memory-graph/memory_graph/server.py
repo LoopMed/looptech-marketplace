@@ -93,7 +93,7 @@ def memory_reindex(directory: str | None = None) -> dict:
     Incremental: only memories whose content changed since the last index
     are re-embedded. `directory` is optional — it defaults to
     `MEMORY_GRAPH_DIR` and, failing that, is auto-detected from the current
-    Claude Code project (`~/.claude/projects/<slug>/memory`). This tool is
+    project (Obsidian vault, then the legacy Claude memory dir). This tool is
     only needed for an explicit/manual refresh; `memory_search`,
     `memory_get` and `memory_neighbors` already reindex lazily on their own.
     """

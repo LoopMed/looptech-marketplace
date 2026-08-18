@@ -8,7 +8,7 @@ description: Disciplina de ENGENHARIA backend em Python — arquitetura Clean + 
 Esta skill carrega **processo e disciplina transferível** para qualquer backend Python
 (FastAPI/Litestar/Starlette + SQLAlchemy async + Pydantic v2), independentemente do produto.
 Fatos concretos (paths, comandos exatos, nomes de tabela, nomes de função de negócio, TTL de
-token, allowlist de CORS) vêm do `CLAUDE.md`/Project Profile do projeto — nunca desta skill.
+token, allowlist de CORS) vêm do Project Profile (`CLAUDE.md` / `AGENTS.md`) do projeto — nunca desta skill.
 
 > **Escopo:** só engenharia (arquitetura, disciplina de acesso a dados, testes, lint/typecheck,
 > segurança em princípio). A **execução** de query/migration (discovery de schema, gate de
@@ -225,7 +225,7 @@ lint + typecheck + testes). Antes de considerar a task pronta, os três precisam
 
 Princípios de engenharia backend válidos para qualquer produto. Regras **específicas do produto**
 (nome de lock, nome de variável de ambiente de scope, allowlist de CORS, papéis administrativos,
-rate-limit) ficam no `CLAUDE.md` do projeto, não nesta skill.
+rate-limit) ficam no Project Profile do projeto, não nesta skill.
 
 - **Ownership em todo acesso a recurso.** Toda rota que acessa um recurso por ID verifica que o
   dono é o usuário/tenant autenticado (ou que o chamador tem papel administrativo explícito) —
@@ -265,10 +265,10 @@ rate-limit) ficam no `CLAUDE.md` do projeto, não nesta skill.
 - **Execução de query/migration** (discovery de schema ao vivo, preflight de conexão, gate de
   produção, ordem de aplicação por existência, resolução de heads) → `looptech:expert-database`.
 - **Fatos concretos** (comandos exatos de test/lint/typecheck, nome de conexão de banco, convenção
-  de branch/PR, TTL de token, `specs_dir`) → Project Profile no `CLAUDE.md`, resolvido pelo
-  `looptech:workflow-dev`.
+  de branch/PR, TTL de token, `specs_dir`) → Project Profile no `CLAUDE.md` / `AGENTS.md`,
+  resolvido pelo `looptech:workflow-dev`.
 - **Regras de segurança específicas do produto** (nome de lock/função, allowlist de CORS concreta,
-  papéis administrativos, gating de endpoint sensível) → `CLAUDE.md` do projeto.
+  papéis administrativos, gating de endpoint sensível) → Project Profile do projeto.
 
 ---
 

@@ -40,7 +40,7 @@ lista de skills disponíveis.
 |---|---|---|
 | `which obsidian` vazio | CLI não instalado | Obsidian → Settings → **CLI** → habilitar e instalar. Docs: https://help.obsidian.md/cli |
 | `obsidian vaults` → *unable to find Obsidian* | App fechado | Abrir o Obsidian e manter aberto — o CLI conversa com o app |
-| skills `obsidian:*` ausentes | Plugin não instalado | `/plugin marketplace add obsidianmd/obsidian-claude-code` + `/plugin install obsidian` (confirme o marketplace correto com o usuário) |
+| skills `obsidian:*` ausentes | Plugin não instalado | Claude: `/plugin marketplace add obsidianmd/obsidian-claude-code` + `/plugin install obsidian`. Codex/Cursor: instale o equivalente de skills Obsidian do host, ou siga só com o `obsidian` CLI se as skills não existirem. Confirme o marketplace correto com o usuário. |
 
 **OFERECE:** instrua o usuário a resolver e **pare aqui** até `obsidian vaults` responder.
 Nenhum passo seguinte funciona sem isso. Não tente contornar com escrita direta em disco.
@@ -51,7 +51,7 @@ Nenhum passo seguinte funciona sem isso. Não tente contornar com escrita direta
 
 **DETECTA**, nesta ordem:
 
-1. Bloco `memory:` no `CLAUDE.md` do projeto → o vault já está declarado.
+1. Bloco `memory:` no `CLAUDE.md` **ou** `AGENTS.md` do projeto → o vault já está declarado.
 2. Diretório contendo `.obsidian/` na raiz do projeto ou um nível abaixo → vault existe mas
    não está declarado.
 3. `obsidian vaults` → algum nome bate com o projeto?

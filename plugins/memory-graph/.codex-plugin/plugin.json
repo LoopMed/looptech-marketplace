@@ -1,0 +1,35 @@
+{
+  "name": "memory-graph",
+  "version": "0.3.0",
+  "description": "Memória de projeto num vault Obsidian — escrita pelo obsidian CLI, recall semântico + travessia de [[links]] 100% on-device (fastembed + sqlite-vec), zero nuvem. Traz as skills memory-vault (protocolo diário) e memory-vault-setup (criação do vault + migração da memória legada).",
+  "author": {
+    "name": "LoopTech",
+    "email": "contato@loopmed.com.br",
+    "url": "https://github.com/LoopMed/looptech-marketplace"
+  },
+  "homepage": "https://github.com/LoopMed/looptech-marketplace",
+  "repository": "https://github.com/LoopMed/looptech-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "memory",
+    "obsidian",
+    "vault",
+    "semantic-search",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "memory-graph",
+    "shortDescription": "Local semantic memory over an Obsidian vault",
+    "longDescription": "Indexes an Obsidian vault on-device with fastembed + sqlite-vec. Skills cover daily recall/write protocol and first-time vault setup plus legacy-memory migration. Nothing leaves the machine.",
+    "developerName": "LoopTech",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write", "MCP"],
+    "websiteURL": "https://github.com/LoopMed/looptech-marketplace",
+    "defaultPrompt": [
+      "Set up the project memory vault",
+      "Search project memory for this decision"
+    ]
+  }
+}

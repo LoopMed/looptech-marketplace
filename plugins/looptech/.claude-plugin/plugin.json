@@ -1,7 +1,7 @@
 {
   "name": "looptech",
   "description": "Agnostic dev workflow orchestrator + guided init + stack-expert skills (backend-go, backend-python, frontend-react/vue engineering, frontend-pwa/web UX, database).",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "author": {
     "name": "LoopTech"
   },

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "memory-graph": {
+      "command": "./scripts/serve.sh",
+      "env": {
+        "MEMORY_GRAPH_DIR": "${MEMORY_GRAPH_DIR}",
+        "MEMORY_GRAPH_DB": "${MEMORY_GRAPH_DB}"
+      }
+    }
+  }
+}

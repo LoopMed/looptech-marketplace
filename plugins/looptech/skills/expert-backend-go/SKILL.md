@@ -7,7 +7,7 @@ description: Disciplina de ENGENHARIA backend em Go — arquitetura em camadas/h
 
 Esta skill carrega **processo e disciplina transferível** para qualquer backend Go,
 independentemente do produto. Fatos concretos (paths, comandos exatos, nomes de tabela,
-nomes de função de negócio) vêm do `CLAUDE.md`/Project Profile do projeto — nunca desta skill.
+nomes de função de negócio) vêm do Project Profile (`CLAUDE.md` / `AGENTS.md`) do projeto — nunca desta skill.
 
 > **Escopo:** só engenharia (arquitetura, sqlx, testes, lint, segurança em princípio).
 > A **execução** de query/migration (discovery de schema, gate de produção, aplicação de
@@ -168,7 +168,7 @@ only-new-issues e deve imprimir "zero issues" antes de considerar a task pronta.
 
 Estes são princípios de engenharia backend, válidos para qualquer produto. Regras de
 segurança **específicas do produto** (nome de lock, nome de variável de ambiente de scope,
-allowlist de CORS, etc.) ficam no `CLAUDE.md` do projeto, não nesta skill.
+allowlist de CORS, etc.) ficam no Project Profile do projeto, não nesta skill.
 
 - **Ownership em todo acesso a recurso.** Toda rota que acessa um recurso identificado por
   ID deve verificar que o dono do recurso é o usuário autenticado (ou que o chamador tem
@@ -195,10 +195,10 @@ allowlist de CORS, etc.) ficam no `CLAUDE.md` do projeto, não nesta skill.
 - **Execução de query/migration** (discovery de schema ao vivo, pre-flight de conexão,
   gate de produção, ordem de aplicação de migration por existência) → `looptech:expert-database`.
 - **Fatos concretos** (comandos exatos de test/lint/build, nome de conexão de banco,
-  convenção de branch/PR) → Project Profile no `CLAUDE.md` do projeto, resolvido pelo
+  convenção de branch/PR) → Project Profile no `CLAUDE.md` / `AGENTS.md`, resolvido pelo
   `looptech:workflow-dev`.
 - **Regras de segurança específicas do produto** (nome de função/lock, allowlist de CORS
-  concreta, nome de variável de scope) → `CLAUDE.md` do projeto.
+  concreta, nome de variável de scope) → Project Profile do projeto.
 
 ---
 

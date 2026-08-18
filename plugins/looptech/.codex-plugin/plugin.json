@@ -1,0 +1,42 @@
+{
+  "name": "looptech",
+  "version": "0.4.0",
+  "description": "Agnostic dev workflow orchestrator + guided init + stack-expert skills (backend-go, backend-python, frontend-react/vue engineering, frontend-pwa/web UX, database).",
+  "author": {
+    "name": "LoopTech",
+    "email": "contato@loopmed.com.br",
+    "url": "https://github.com/LoopMed/looptech-marketplace"
+  },
+  "homepage": "https://github.com/LoopMed/looptech-marketplace",
+  "repository": "https://github.com/LoopMed/looptech-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "orchestration",
+    "subagents",
+    "backend",
+    "frontend",
+    "database",
+    "react",
+    "vue",
+    "go",
+    "python",
+    "fastapi",
+    "pwa",
+    "ux"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "LoopTech",
+    "shortDescription": "Agnostic engineering workflow and stack-expert skills",
+    "longDescription": "Orchestrates discover → spec+plan → implement → review → lint/tests → PR, then loads the matching stack-expert skill (Go, Python, React, Vue, PWA, web, database) from each project's Project Profile.",
+    "developerName": "LoopTech",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/LoopMed/looptech-marketplace",
+    "defaultPrompt": [
+      "Initialize this project with looptech:init",
+      "Start a development task with looptech:workflow-dev"
+    ]
+  }
+}

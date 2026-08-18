@@ -1,6 +1,6 @@
 ---
 name: expert-frontend-web
-description: Disciplina de UI/UX/interação orientada a WEB-FIRST / desktop (agnóstica de produto; Design System, tokens e paleta concretos vêm do CLAUDE.md). Layouts densos de informação, uso de ponteiro/hover, atalhos de teclado, seleção múltipla e arraste, navegação lateral/multi-painel, tabelas/grades densas, breakpoints largos e acessibilidade de teclado completa; foco em fluxos de operador/admin (filtros, ações em lote). Carregue (junto com a skill de engenharia da stack) ao tocar áreas de frontend marcadas como web-first no Project Profile (ux_default/ux_overrides). NÃO cobre arquitetura/TS/testes — isso é o eixo de engenharia (ex.: expert-frontend-react ou expert-frontend-vue).
+description: Disciplina de UI/UX/interação orientada a WEB-FIRST / desktop (agnóstica de produto; Design System, tokens e paleta concretos vêm do Project Profile). Layouts densos de informação, uso de ponteiro/hover, atalhos de teclado, seleção múltipla e arraste, navegação lateral/multi-painel, tabelas/grades densas, breakpoints largos e acessibilidade de teclado completa; foco em fluxos de operador/admin (filtros, ações em lote). Carregue (junto com a skill de engenharia da stack) ao tocar áreas de frontend marcadas como web-first no Project Profile (ux_default/ux_overrides). NÃO cobre arquitetura/TS/testes — isso é o eixo de engenharia (ex.: expert-frontend-react ou expert-frontend-vue).
 ---
 
 # Expert Frontend Web (UX web-first / desktop)
@@ -18,7 +18,7 @@ disso — cobre só a camada de interação e layout otimizada para desktop e
 uso de ponteiro.
 
 Design System, tokens de cor, paleta, tipografia e componentes concretos
-**não** vivem aqui — eles vêm do `CLAUDE.md` do projeto (ou de uma skill de
+**não** vivem aqui — eles vêm do Project Profile do projeto (ou de uma skill de
 marca/produto própria). Esta skill entrega os **princípios** de interação
 web-first; o projeto entrega os **fatos** visuais.
 
@@ -82,6 +82,6 @@ fronteira no handoff do subagente.
 - Arquitetura de componentes, hooks, TypeScript, testes, CSP, segurança de
   código → skill de **engenharia** da stack (ex.: `expert-frontend-react` / `expert-frontend-vue`).
 - Nome do Design System, tokens de cor/paleta concretos, tipografia,
-  biblioteca de componentes → `CLAUDE.md` do projeto ou skill de marca.
+  biblioteca de componentes → Project Profile do projeto ou skill de marca.
 - UX mobile-first (alvo de toque, gestos, navegação por polegar,
   offline/PWA) → `expert-frontend-pwa`.

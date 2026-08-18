@@ -7,7 +7,7 @@ sizing por lane e a regra dura que governa quem executa cada tipo de ação.
 
 ## Fase 0 — Resolver Project Profile
 
-Antes de classificar a lane, o orquestrador lê o `CLAUDE.md` do projeto, monta
+Antes de classificar a lane, o orquestrador lê o Project Profile (`CLAUDE.md` / `AGENTS.md`), monta
 `path → stack → comandos` a partir do Project Profile e detecta stacks ausentes por
 manifesto (ver `project-profile.md`). Nenhuma lane é classificada sem essa resolução prévia.
 
@@ -96,5 +96,5 @@ trivial, a menos que caia dentro da exceção de ≤ 100 caracteres.
 ## Planejamento permanece desacoplado
 
 A skill de spec/plan usada nas lanes M/L não é embutida no `workflow-dev` — o orquestrador
-referencia a skill de planejamento que o projeto declarar (via Project Profile ou
-`CLAUDE.md`), sem duplicar seu conteúdo aqui.
+referencia a skill de planejamento que o projeto declarar (via Project Profile em
+`CLAUDE.md` / `AGENTS.md`), sem duplicar seu conteúdo aqui.

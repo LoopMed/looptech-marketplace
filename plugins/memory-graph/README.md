@@ -62,9 +62,10 @@ conversa com o app rodando. Ver https://help.obsidian.md/cli
   gracefully and search whatever's already indexed.
 - **Auto-detected index location.** Likewise, when `MEMORY_GRAPH_DB` isn't
   set, the SQLite index lives at a stable, project-scoped path *outside*
-  the memory directory: `~/.claude/projects/<slug>/.memory-graph/index.db`
-  — so it never pollutes the memory folder and each project gets its own
-  index automatically.
+  the memory directory: `~/.looptech/memory-graph/<slug>/index.db`. If an
+  older Claude-era index already exists at
+  `~/.claude/projects/<slug>/.memory-graph/index.db`, that file is reused
+  so an upgrade does not re-embed the vault.
 
 All of this lives in one place, `memory_graph/config.py`, used by every
 entrypoint (`cli.py` and `server.py`) — no duplicated resolution logic.
@@ -144,12 +145,21 @@ Exposed via `python -m memory_graph serve` (FastMCP, stdio):
 | `memory_neighbors(name, depth=1)` | Traverse the `[[link]]` graph from a memory, in both directions, out to `depth` hops. |
 | `memory_reindex(directory=None)` | Re-scan the memory directory; only re-embeds files whose content changed. |
 
-### Plugging into Claude Code
+### Plugging into Claude Code, Codex, and Cursor
 
-`.claude-plugin/plugin.json` declares the MCP server (`python -m memory_graph
-serve`). Set `MEMORY_GRAPH_DIR` to your memory directory and (optionally)
-`MEMORY_GRAPH_DB` for the index location before Claude Code launches the
-plugin, e.g. in your shell profile or the plugin's env block.
+The plugin is the same folder. Each host reads its own manifest:
+
+| Host | Manifest | MCP config |
+|---|---|---|
+| Claude Code | `.claude-plugin/plugin.json` | inline `mcpServers` (kept for existing installs) |
+| Codex | `.codex-plugin/plugin.json` | `.mcp.json` → `./scripts/serve.sh` |
+| Cursor | `.cursor-plugin/plugin.json` | `mcp.json` → `./scripts/serve.sh` |
+
+`scripts/serve.sh` starts `uv run --directory <plugin> python -m memory_graph serve`
+from the plugin root, so it does not depend on `CLAUDE_PLUGIN_ROOT`. The vault
+directory is auto-detected; set `MEMORY_GRAPH_DIR` / `MEMORY_GRAPH_DB` only to
+override. On Cursor those names are optional plugin variables (Customize →
+Configure). Reinicie a sessão depois de instalar para o MCP aparecer.
 
 ## Storage backend
 

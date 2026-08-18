@@ -1,15 +1,21 @@
 # looptech marketplace
 
-Marketplace Claude Code com **1 plugin** (`looptech`) que empacota o fluxo de
+Marketplace com **2 plugins** (`looptech`, `memory-graph`) que empacota o fluxo de
 desenvolvimento da LoopTech como um **workflow agnóstico de produto**: orquestração
 de tarefas de dev (spec → plano → implementação → review → PR) e um conjunto de
 **skills expert** por stack/eixo, reutilizáveis em qualquer projeto — LoopMed, LoopCRM
 ou um projeto futuro X/Y.
 
-A regra de ouro: **o plugin carrega processo e disciplina transferível; o `CLAUDE.md`
-de cada projeto carrega os fatos concretos** (paths, comandos, branches, conexões de
-banco). Nenhuma skill deste plugin cita nomes de produto, paths concretos ou nomes de
-conexão — isso garante que o mesmo plugin sirva qualquer repositório.
+O mesmo repositório instala em **Claude Code**, **Codex** e **Cursor**. Cada host lê o
+catálogo dele (`.claude-plugin/`, `.agents/plugins/`, `.cursor-plugin/`); a
+implementação em `plugins/` é única.
+
+A regra de ouro: **o plugin carrega processo e disciplina transferível; o Project
+Profile de cada projeto (`CLAUDE.md` e `AGENTS.md`) carrega os fatos concretos**
+(paths, comandos, branches, conexões de banco). Nenhuma skill deste plugin cita nomes
+de produto, paths concretos ou nomes de conexão — isso garante que o mesmo plugin
+sirva qualquer repositório. Claude Code lê `CLAUDE.md`; Codex e Cursor leem
+`AGENTS.md`. O `looptech:init` grava o Profile nos dois.
 
 ## O que é o plugin `looptech`
 
@@ -80,42 +86,77 @@ web-first", etc., sem duplicar a disciplina de engenharia.
 
 ## Como instalar
 
-No Claude Code:
+### Claude Code
 
 ```
 /plugin marketplace add git@github.com:LoopMed/looptech-marketplace.git
 /plugin install looptech@looptech
 ```
 
-Isso registra o marketplace `looptech` e instala o plugin `looptech`, disponibilizando
-as skills acima via `looptech:<skill>`.
+Skills ficam disponíveis como `looptech:<skill>` e `/looptech:init`.
+
+### Codex
+
+```
+codex plugin marketplace add LoopMed/looptech-marketplace --ref main
+codex plugin install looptech --source looptech
+```
+
+Skills disparam pelo description ou com `$init` / `$workflow-dev`. Depois:
+
+```
+codex plugin install memory-graph --source looptech
+```
+
+### Cursor
+
+**Team marketplace** (Teams/Enterprise): Dashboard → Plugins → Import from Repo →
+`https://github.com/LoopMed/looptech-marketplace`. O Cursor lê
+`.cursor-plugin/marketplace.json` e lista `looptech` e `memory-graph`. Instale pelo
+painel Customize.
+
+**Local (dev / sem team marketplace):**
+
+```
+mkdir -p ~/.cursor/plugins/local
+ln -s /caminho/para/looptech-marketplace/plugins/looptech ~/.cursor/plugins/local/looptech
+ln -s /caminho/para/looptech-marketplace/plugins/memory-graph ~/.cursor/plugins/local/memory-graph
+```
+
+Reinicie o Cursor (Developer: Reload Window). Skills e commands (`/init`,
+`/workflow-dev`) aparecem em Customize.
 
 ### Depois de instalar — rode o `init`
 
 **Você não precisa decorar o que configurar.** Assim que instalar, rode:
 
-```
-/looptech:init
-```
+| Host | Como disparar |
+|---|---|
+| Claude Code | `/looptech:init` |
+| Codex | `$init` |
+| Cursor | `/init` |
 
 A skill `looptech:init` faz o setup guiado do zero ao pronto — detecta os sub-projetos e
-gera o **Project Profile** no `CLAUDE.md`, configura a conexão de **banco** (via
-`looptech:expert-database`, sem gravar credencial silenciosamente e com PROD sempre gated),
-oferece o **Serena** (navegação de código, opcional) e o **memory-graph** (memória semântica
-local, opcional), e valida os **runtimes** de cada stack. Cada passo é DETECTA → REPORTA →
-OFERECE (com sua confirmação). Reinicie a sessão ao final para os MCP servers novos aparecerem.
+gera o **Project Profile** no `CLAUDE.md` **e** no `AGENTS.md`, configura a conexão de
+**banco** (via `looptech:expert-database`, sem gravar credencial silenciosamente e com
+PROD sempre gated), oferece o **Serena** (navegação de código, opcional — registra o MCP
+no host atual) e o **memory-graph** (memória semântica local, opcional), e valida os
+**runtimes** de cada stack. Cada passo é DETECTA → REPORTA → OFERECE (com sua
+confirmação). Reinicie a sessão ao final para os MCP servers novos aparecerem.
 
-> Instalação opcional do `memory-graph` (plugin irmão neste marketplace):
-> `/plugin install memory-graph@looptech` — memória com recall vetorial + travessia de
-> `[[links]]`, 100% local (nada sai da máquina). O `init` te guia por ele também.
+> Plugin irmão `memory-graph`: memória com recall vetorial + travessia de `[[links]]`,
+> 100% local. Claude: `/plugin install memory-graph@looptech`. Codex/Cursor: instale
+> `memory-graph` do mesmo marketplace (ou o symlink local acima). O `init` te guia por
+> ele também.
 
 ## Como um projeto adota o plugin
 
-Um projeto adota o `looptech:workflow-dev` colando um bloco **Project Profile** no seu
-`CLAUDE.md`. É o único ponto onde o projeto declara os fatos concretos que o plugin
-precisa para operar: sub-projetos e suas stacks, o eixo de UX por área, convenções de
-VCS, diretório de specs, comandos exatos por stack (espelhando o CI) e, se houver banco,
-as conexões e o dialeto.
+Um projeto adota o `looptech:workflow-dev` colando um bloco **Project Profile** no
+`CLAUDE.md` **e** no `AGENTS.md`. É o único ponto onde o projeto declara os fatos
+concretos que o plugin precisa para operar: sub-projetos e suas stacks, o eixo de UX por
+área, convenções de VCS, diretório de specs, comandos exatos por stack (espelhando o CI)
+e, se houver banco, as conexões e o dialeto. Claude Code lê `CLAUDE.md`; Codex e Cursor
+leem `AGENTS.md` — os dois arquivos precisam do mesmo bloco.
 
 Template genérico (adapte os valores de exemplo ao seu projeto):
 
@@ -168,11 +209,39 @@ Notas sobre o Profile:
   `package.json` com `react` → `expert-frontend-react`; com `vue` → `expert-frontend-vue`) e
   avisa que inferiu — o Profile é sempre a fonte autoritativa quando presente.
 - Regras de **segurança do produto** (locks nomeados, gating de endpoints sensíveis,
-  CORS/gateway, rate-limit, auth de storage) continuam no `CLAUDE.md` do projeto —
+  CORS/gateway, rate-limit, auth de storage) continuam no Project Profile do projeto —
   o plugin carrega apenas os princípios agnósticos correspondentes.
 - Fatos de conexão de banco (nomes de profile stage/prod, dialeto, secret store,
-  sinal visual de produção) também ficam no `CLAUDE.md`/Project Profile — o
-  `expert-database` é agnóstico ao dialeto (Postgres como referência).
+  sinal visual de produção) também ficam no Project Profile — o `expert-database` é
+  agnóstico ao dialeto (Postgres como referência).
+
+## Estrutura do repositório
+
+Um único `plugins/` e um catálogo por host — o mesmo padrão do marketplace oficial do Expo:
+
+```
+.claude-plugin/marketplace.json     # Claude Code
+.agents/plugins/marketplace.json    # Codex
+.cursor-plugin/marketplace.json     # Cursor
+plugins/
+  looptech/
+    .claude-plugin/plugin.json
+    .codex-plugin/plugin.json
+    .cursor-plugin/plugin.json
+    commands/                       # slash commands do Cursor (/init, /workflow-dev)
+    skills/
+  memory-graph/
+    .claude-plugin/plugin.json
+    .codex-plugin/plugin.json
+    .cursor-plugin/plugin.json
+    .mcp.json                       # Claude + Codex
+    mcp.json                        # Cursor
+    scripts/serve.sh                # stdio MCP, independente de CLAUDE_PLUGIN_ROOT
+    skills/
+```
+
+Versões dos três manifests de cada plugin precisam andar juntas (`looptech` 0.4.0,
+`memory-graph` 0.3.0).
 
 ## Extensibilidade
 
@@ -181,7 +250,7 @@ O naming por stack (`expert-backend-go`, `expert-backend-python`, `expert-fronte
 surgir necessidade real em algum projeto consumidor — por exemplo `expert-backend-node` ou
 `expert-database-<outro dialeto>`. Essas skills são criadas quando um projeto real exigir,
 seguindo o mesmo padrão: processo e disciplina transferível no plugin, fatos concretos no
-`CLAUDE.md` do projeto.
+Project Profile (`CLAUDE.md` / `AGENTS.md`) do projeto.
 
 ## Licença
 

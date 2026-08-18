@@ -1,6 +1,6 @@
 ---
 name: memory-vault
-description: Use SEMPRE que a tarefa envolver memória do projeto — ler, buscar, criar ou atualizar nota, decisão, gotcha, incidente, spec, plano ou log — em qualquer projeto cujo `CLAUDE.md` declare um bloco `memory:` apontando para um vault Obsidian. Cobre o protocolo diário (buscar antes de implementar, gravar ao terminar), a taxonomia de pastas e frontmatter, o formato canônico de nome, a política de segredo, e as armadilhas do `obsidian` CLI que fazem gravação falhar em silêncio. NÃO use para configurar o vault pela primeira vez nem para migrar memória antiga (isso é `memory-graph:memory-vault-setup`).
+description: Use SEMPRE que a tarefa envolver memória do projeto — ler, buscar, criar ou atualizar nota, decisão, gotcha, incidente, spec, plano ou log — em qualquer projeto cujo `CLAUDE.md` ou `AGENTS.md` declare um bloco `memory:` apontando para um vault Obsidian. Cobre o protocolo diário (buscar antes de implementar, gravar ao terminar), a taxonomia de pastas e frontmatter, o formato canônico de nome, a política de segredo, e as armadilhas do `obsidian` CLI que fazem gravação falhar em silêncio. NÃO use para configurar o vault pela primeira vez nem para migrar memória antiga (isso é `memory-graph:memory-vault-setup`).
 ---
 
 # memory-vault — Protocolo de Memória em Vault Obsidian
@@ -8,14 +8,14 @@ description: Use SEMPRE que a tarefa envolver memória do projeto — ler, busca
 ## Overview
 
 Toda memória do projeto vive em **um único vault Obsidian**, declarado no bloco `memory:` do
-`CLAUDE.md`. Escrita passa **sempre** pelo `obsidian` CLI; leitura pode usar o CLI ou a busca
-semântica do `memory-graph` (MCP), que indexa o mesmo vault.
+Project Profile (`CLAUDE.md` / `AGENTS.md`). Escrita passa **sempre** pelo `obsidian` CLI;
+leitura pode usar o CLI ou a busca semântica do `memory-graph` (MCP), que indexa o mesmo vault.
 
 **Announce at start:** "Estou usando a skill memory-vault para consultar/gravar a memória."
 
 **Pré-requisitos** (se faltar algum, pare e rode `memory-graph:memory-vault-setup`):
 - `obsidian` CLI no PATH e **Obsidian aberto** — o CLI conversa com o app rodando.
-- Bloco `memory:` no `CLAUDE.md` do projeto com o nome do vault.
+- Bloco `memory:` no `CLAUDE.md` **ou** `AGENTS.md` do projeto com o nome do vault.
 - Skill `obsidian:obsidian-cli` disponível (e `obsidian:obsidian-markdown` para criar nota).
 
 **Princípios centrais:**
@@ -26,13 +26,14 @@ semântica do `memory-graph` (MCP), que indexa o mesmo vault.
 - **O CLI não protege você.** Ele mente no exit code e aceita nomes inválidos. Sanitize e
   valide — ver § Armadilhas.
 - Esta skill carrega **processo**; os fatos concretos (nome do vault, pastas, produtos) vêm do
-  bloco `memory:` do `CLAUDE.md` do projeto.
+  bloco `memory:` do Project Profile do projeto.
 
 ---
 
 ## Fase 0 — Resolver o bloco `memory:`
 
-Leia o `CLAUDE.md` do projeto e extraia:
+Leia o `CLAUDE.md` **e** o `AGENTS.md` do projeto e extraia o bloco `memory:` (se os dois
+existirem e divergirem, pare e pergunte qual vence):
 
 ```yaml
 memory:
@@ -262,7 +263,7 @@ obsidian vault="<V>" read path="$P" | head -3      # confirma que existe
 ## Quick Reference
 
 ```
-0. Resolver     → ler bloco memory: do CLAUDE.md → vault, produtos, specs_dir
+0. Resolver     → ler bloco memory: do CLAUDE.md / AGENTS.md → vault, produtos, specs_dir
 1. RECALL       → search:context + MOC da área + backlinks (e memory_search se MCP ativo)
 2. CAPTURA      → append no 00-Sistema/Inbox.md
 3. GRAVAÇÃO     → create (template) OU append + property:set atualizado

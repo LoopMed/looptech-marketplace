@@ -154,9 +154,38 @@ def test_resolve_db_path_is_project_scoped_and_outside_memory_dir(tmp_path, monk
     db_path = resolve_db_path()
 
     assert db_path == str(
-        fake_home / ".claude" / "projects" / "-Users-x-projects-Demo" / ".memory-graph" / "index.db"
+        fake_home / ".looptech" / "memory-graph" / "-Users-x-projects-Demo" / "index.db"
     )
     assert "/memory/" not in db_path  # lives outside the memory dir, per spec
+
+
+def test_resolve_db_path_keeps_existing_claude_index(tmp_path, monkeypatch):
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    legacy = (
+        fake_home / ".claude" / "projects" / "-Users-x-projects-Demo"
+        / ".memory-graph" / "index.db"
+    )
+    legacy.parent.mkdir(parents=True)
+    legacy.write_bytes(b"")
+
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.delenv("MEMORY_GRAPH_DB", raising=False)
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", "/Users/x/projects/Demo")
+
+    assert resolve_db_path() == str(legacy)
+
+
+def test_resolve_db_path_ignores_unexpanded_placeholder(tmp_path, monkeypatch):
+    fake_home = tmp_path / "home"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.setenv("MEMORY_GRAPH_DB", "${MEMORY_GRAPH_DB}")
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", "/Users/x/projects/Demo")
+
+    assert resolve_db_path() == str(
+        fake_home / ".looptech" / "memory-graph" / "-Users-x-projects-Demo" / "index.db"
+    )
 
 
 def test_resolve_db_path_explicit_wins(tmp_path):

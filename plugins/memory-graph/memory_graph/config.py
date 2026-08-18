@@ -8,7 +8,9 @@ The memory directory is expected to be an **Obsidian vault** (a directory
 containing `.obsidian/`). Writes go through the `obsidian` CLI; this package
 only ever reads. The legacy `~/.claude/projects/<slug>/memory` layout is still
 auto-detected as a last resort so existing installs keep working until they
-migrate (see the `memory-graph:memory-vault-setup` skill).
+migrate (see the `memory-graph:memory-vault-setup` skill). The SQLite index
+defaults to `~/.looptech/memory-graph/<slug>/index.db` so Codex and Cursor
+do not depend on a Claude-only path.
 """
 
 from __future__ import annotations
@@ -18,20 +20,44 @@ from pathlib import Path
 
 
 def project_slug(project_dir: str) -> str:
-    """Claude Code's project slug: absolute path with every '/' -> '-'.
+    """Stable project slug: absolute path with every '/' -> '-'.
 
     e.g. /Users/lclpedro/projects/LoopMed -> -Users-lclpedro-projects-LoopMed
     """
     return project_dir.replace("/", "-")
 
 
+def _usable_env(name: str) -> str | None:
+    """Return an env value only if the host actually set it.
+
+    Empty strings and leftover `${PLACEHOLDER}` expansions (hosts that pass
+    the literal token when the variable is unset) are treated as unset so
+    auto-detection still runs.
+    """
+    value = os.environ.get(name)
+    if not value:
+        return None
+    if value.startswith("${") and value.endswith("}"):
+        return None
+    return value
+
+
 def _current_project_dir() -> str:
-    return os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    return (
+        _usable_env("CLAUDE_PROJECT_DIR")
+        or _usable_env("CURSOR_PROJECT_DIR")
+        or os.getcwd()
+    )
 
 
 def _claude_project_root(project_dir: str) -> Path:
     slug = project_slug(os.path.abspath(project_dir))
     return Path.home() / ".claude" / "projects" / slug
+
+
+def _looptech_index_path(project_dir: str) -> Path:
+    slug = project_slug(os.path.abspath(project_dir))
+    return Path.home() / ".looptech" / "memory-graph" / slug / "index.db"
 
 
 def is_vault(path: Path) -> bool:
@@ -94,7 +120,7 @@ def resolve_memory_dir(explicit: str | None = None, *, required: bool = True) ->
             return explicit
         raise FileNotFoundError(f"memory directory not found: {explicit}")
 
-    env = os.environ.get("MEMORY_GRAPH_DIR")
+    env = _usable_env("MEMORY_GRAPH_DIR")
     if env:
         if Path(env).is_dir():
             return env
@@ -129,15 +155,20 @@ def resolve_memory_dir(explicit: str | None = None, *, required: bool = True) ->
 def resolve_db_path(explicit: str | None = None) -> str:
     """Resolve the SQLite index path.
 
-    Resolution order: `explicit` -> `$MEMORY_GRAPH_DB` -> a stable
-    per-project path *outside* the memory directory so the index never
-    pollutes it: `~/.claude/projects/<slug>/.memory-graph/index.db`.
+    Resolution order: `explicit` -> `$MEMORY_GRAPH_DB` -> an existing
+    Claude-era index at `~/.claude/projects/<slug>/.memory-graph/index.db`
+    (kept so upgraded installs do not re-embed) -> host-neutral
+    `~/.looptech/memory-graph/<slug>/index.db`.
     """
     if explicit:
         return explicit
 
-    env = os.environ.get("MEMORY_GRAPH_DB")
+    env = _usable_env("MEMORY_GRAPH_DB")
     if env:
         return env
 
-    return str(_claude_project_root(_current_project_dir()) / ".memory-graph" / "index.db")
+    project_dir = _current_project_dir()
+    legacy = _claude_project_root(project_dir) / ".memory-graph" / "index.db"
+    if legacy.is_file():
+        return str(legacy)
+    return str(_looptech_index_path(project_dir))

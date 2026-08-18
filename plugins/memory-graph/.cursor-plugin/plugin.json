@@ -1,0 +1,37 @@
+{
+  "name": "memory-graph",
+  "version": "0.3.0",
+  "description": "Memória de projeto num vault Obsidian — escrita pelo obsidian CLI, recall semântico + travessia de [[links]] 100% on-device (fastembed + sqlite-vec), zero nuvem. Traz as skills memory-vault (protocolo diário) e memory-vault-setup (criação do vault + migração da memória legada).",
+  "author": {
+    "name": "LoopTech",
+    "email": "contato@loopmed.com.br"
+  },
+  "homepage": "https://github.com/LoopMed/looptech-marketplace",
+  "repository": "https://github.com/LoopMed/looptech-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "memory",
+    "obsidian",
+    "vault",
+    "semantic-search",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "mcpServers": "./mcp.json",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "MEMORY_GRAPH_DIR": {
+        "type": "string",
+        "title": "Vault directory",
+        "description": "Optional. Absolute path to the Obsidian vault (the directory that contains .obsidian/). Auto-detected from the project when empty."
+      },
+      "MEMORY_GRAPH_DB": {
+        "type": "string",
+        "title": "Index database path",
+        "description": "Optional. Absolute path to the SQLite index. Auto-detected per project when empty."
+      }
+    }
+  }
+}
